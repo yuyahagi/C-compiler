@@ -4,7 +4,7 @@
 // Token types.
 // Tokens defined as a single letter is directly expressed as its ASCII code.
 enum {
-    TK_NUM = 256,   // Represents an integer.
+    TK_NUM = 256,   // Represents a number.
     TK_EOF,         // Represents end of input.
 };
 
@@ -15,8 +15,37 @@ typedef struct {
     int val;        // Value of TK_NUM token.
 } Token;
 
-// A buffer to store tokenized code.
+// A buffer to store tokenized code and current position.
 Token tokens[100];
+size_t pos = 0;
+
+// Node types.
+// Tokens defined as a single letter is expressed with its ASCII code.
+enum {
+    ND_NUM = 256,
+};
+
+typedef struct Node {
+    int ty;             // Type of node.
+    struct Node *lhs;
+    struct Node *rhs;
+    int val;            // Value of ND_NUM node.
+} Node;
+
+Node *new_node(int ty, Node *lhs, Node *rhs) {
+    Node *node = calloc(1, sizeof(Node));
+    node->ty = ty;
+    node->lhs = lhs;
+    node->rhs = rhs;
+    return node;
+}
+
+Node *new_node_num(int val) {
+    Node *node = calloc(1, sizeof(Node));
+    node->ty = ND_NUM;
+    node->val = val;
+    return node;
+}
 
 // Split input string and store to a buffer.
 tokenize(char *p) {
@@ -58,45 +87,66 @@ void error(size_t i) {
     exit(1);
 }
 
+// Parse an expression to an abstract syntax tree.
+Node *expr() {
+    Node *lhs = new_node_num(tokens[pos++].val);
+    if (tokens[pos].ty == '+') {
+        ++pos;
+        return new_node('+', lhs, expr());
+    }
+    if (tokens[pos].ty == '-') {
+        ++pos;
+        return new_node('-', lhs, expr());
+    }
+    return lhs;
+}
+
+// Generate assembly from an abstract syntax tree.
+void gen(Node *node) {
+    if (node->ty == ND_NUM) {
+        printf("  push %d\n", node->val);
+        return;
+    }
+
+    gen(node->lhs);
+    gen(node->rhs);
+
+    printf("  pop rdi\n");
+    printf("  pop rax\n");
+
+    switch (node->ty) {
+    case '+':
+        printf("  add rax, rdi\n");
+        break;
+    case '-':
+        printf("  sub rax, rdi\n");
+        break;
+    default:
+        fprintf(stderr, "An unexpected operator type during assembly generation.\n");
+    }
+
+    printf("  push rax\n");
+}
+
 int main(int argc, char **argv) {
     if (argc != 2) {
         fprintf(stderr, "Invalid number of arguments.\n");
         return 1;
     }
 
-    // Tokenize.
+    // Tokenize and parse to abstract syntax tree.
     tokenize(argv[1]);
+    Node *node = expr();
 
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");
     printf("main:\n");
 
-    // The first token should be a number.
-    printf("  mov rax, %d\n", tokens[0].val);
+    // Generate assembly from the AST.
+    gen(node);
 
-    // Consume "+ <NUMBER>" or "- <NUMBER>" token sequences and generate assembly.
-    size_t i = 1;
-    while (tokens[i].ty != TK_EOF) {
-        switch (tokens[i].ty) {
-        case '+':
-            ++i;
-            if (tokens[i].ty != TK_NUM) error(i);
-            printf("  add rax, %d\n", tokens[i].val);
-            ++i;
-            break;
-
-        case '-':
-            ++i;
-            if (tokens[i].ty != TK_NUM) error(i);
-            printf("  sub rax, %d\n", tokens[i].val);
-            ++i;
-            break;
-
-        default:
-            error(i);
-        }
-    }
-
+    // The value of the entire expression should have been pushed at the top of the stack.
+    printf("  pop rax\n");
     printf("  ret\n");
     return 0;
 }
