@@ -35,6 +35,9 @@ typedef struct Node {
     int val;            // Value of ND_NUM node.
 } Node;
 
+// A buffer to store parsed statements (ASTs).
+Node *code[100];
+
 Node *new_node(int ty, Node *lhs, Node *rhs) {
     Node *node = calloc(1, sizeof(Node));
     node->ty = ty;
@@ -76,6 +79,7 @@ void tokenize(char *p) {
         case '/':
         case '(':
         case ')':
+        case ';':
             tokens[i].ty = *p;
             tokens[i].input = p;
             ++i;
@@ -92,10 +96,14 @@ void tokenize(char *p) {
 }
 
 // Parse an expression to an abstract syntax tree.
+// program: {statement}*
+// statement: expr ";"
 // expr: mul expr'
 // expr': '' | "+" expr' | "-" expr'
 // mul: term | term "*" mul | term "/" mul
 // term: num | "(" expr ")"
+void program(void);
+Node *statement(void);
 Node *expr(void);
 Node *mul(void);
 Node *term(void);
@@ -109,10 +117,32 @@ bool consume(int ty) {
     }
 }
 
+void expect(int ty) {
+    if (tokens[pos].ty != ty) {
+        fprintf(stderr, "A token of type %d expected but was %d.\n", ty, tokens[pos].ty);
+        exit(1);
+    }
+}
+
 // A function to report parsing errors.
 void error(const char *msg, size_t i) {
     fprintf(stderr, "%s \"%s\"\n", msg, tokens[i].input);
     exit(1);
+}
+
+void program(void) {
+    int i = 0;
+    while(tokens[pos].ty != TK_EOF) {
+        code[i++] = statement();
+    }
+    return;
+}
+
+Node *statement(void) {
+    Node *node = expr();
+    if (!consume(';'))
+        error("A statement not terminated with ';'.", pos);
+    return node;
 }
 
 // Parse an expression.
@@ -124,6 +154,7 @@ Node *expr(void) {
     if (consume('-')) {
         return new_node('-', lhs, expr());
     }
+
     return lhs;
 }
 
@@ -197,17 +228,21 @@ int main(int argc, char **argv) {
 
     // Tokenize and parse to abstract syntax tree.
     tokenize(argv[1]);
-    Node *node = expr();
+    program();
 
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");
     printf("main:\n");
 
-    // Generate assembly from the AST.
-    gen(node);
+    // Generate assembly from the ASTs.
+    for (int i = 0; code[i]; i++) {
+        gen(code[i]);
 
-    // The value of the entire expression should have been pushed at the top of the stack.
-    printf("  pop rax\n");
+        // The value of the entire expression is at the top of the stack.
+        // Pop it to keep the correct counting.
+        printf("  pop rax\n");
+    }
+
     printf("  ret\n");
     return 0;
 }
