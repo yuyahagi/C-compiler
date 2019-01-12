@@ -57,7 +57,7 @@ tokenize(char *p) {
             continue;
         }
 
-        if (*p == '+' || *p == '-') {
+        if (*p == '+' || *p == '-' || *p == '*' || *p == '/') {
             tokens[i].ty = *p;
             tokens[i].input = p;
             ++i;
@@ -88,8 +88,25 @@ void error(size_t i) {
 }
 
 // Parse an expression to an abstract syntax tree.
-Node *expr() {
+// expr: mul expr'
+// expr': '' | "+" expr' | "-" expr'
+// mul: num | num "*" mul | num "/" mul
+Node *mul() {
     Node *lhs = new_node_num(tokens[pos++].val);
+    switch(tokens[pos].ty) {
+    case '*':
+        ++pos;
+        return new_node('*', lhs, mul());
+    case '/':
+        ++pos;
+        return new_node('/', lhs, mul());
+    default:
+        return lhs;
+    }
+}
+
+Node *expr() {
+    Node *lhs = mul();
     if (tokens[pos].ty == '+') {
         ++pos;
         return new_node('+', lhs, expr());
@@ -120,6 +137,13 @@ void gen(Node *node) {
         break;
     case '-':
         printf("  sub rax, rdi\n");
+        break;
+    case '*':
+        printf("  mul rdi\n");
+        break;
+    case '/':
+        printf("  xor rdx, rdx\n");
+        printf("  div rdi\n");
         break;
     default:
         fprintf(stderr, "An unexpected operator type during assembly generation.\n");
