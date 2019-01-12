@@ -1,3 +1,6 @@
+#include <ctype.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -48,19 +51,11 @@ Node *new_node_num(int val) {
 }
 
 // Split input string and store to a buffer.
-tokenize(char *p) {
+void tokenize(char *p) {
     int i = 0;
     while (*p) {
         // Skip white spaces.
         if (isspace(*p)) {
-            ++p;
-            continue;
-        }
-
-        if (*p == '+' || *p == '-' || *p == '*' || *p == '/') {
-            tokens[i].ty = *p;
-            tokens[i].input = p;
-            ++i;
             ++p;
             continue;
         }
@@ -73,6 +68,21 @@ tokenize(char *p) {
             continue;
         }
 
+        // One-letter tokens.
+        switch (*p) {
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+        case '(':
+        case ')':
+            tokens[i].ty = *p;
+            tokens[i].input = p;
+            ++i;
+            ++p;
+            continue;
+        }
+
         fprintf(stderr, "Cannot tokenize %s.\n", p);
         exit(1);
     }
@@ -81,18 +91,45 @@ tokenize(char *p) {
     tokens[i].input = p;
 }
 
-// A function to report errors.
-void error(size_t i) {
-    fprintf(stderr, "An unexpeced token: %s.\n", tokens[i].input);
-    exit(1);
-}
-
 // Parse an expression to an abstract syntax tree.
 // expr: mul expr'
 // expr': '' | "+" expr' | "-" expr'
-// mul: num | num "*" mul | num "/" mul
-Node *mul() {
-    Node *lhs = new_node_num(tokens[pos++].val);
+// mul: term | term "*" mul | term "/" mul
+// term: num | "(" expr ")"
+Node *expr(void);
+Node *mul(void);
+Node *term(void);
+
+bool consume(int ty) {
+    if (tokens[pos].ty == ty) {
+        ++pos;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+// A function to report parsing errors.
+void error(const char *msg, size_t i) {
+    fprintf(stderr, "%s \"%s\"\n", msg, tokens[i].input);
+    exit(1);
+}
+
+// Parse an expression.
+Node *expr(void) {
+    Node *lhs = mul();
+    if (consume('+')) {
+        return new_node('+', lhs, expr());
+    }
+    if (consume('-')) {
+        return new_node('-', lhs, expr());
+    }
+    return lhs;
+}
+
+// Parse a multiplicative expression.
+Node *mul(void) {
+    Node *lhs = term();
     switch(tokens[pos].ty) {
     case '*':
         ++pos;
@@ -105,17 +142,17 @@ Node *mul() {
     }
 }
 
-Node *expr() {
-    Node *lhs = mul();
-    if (tokens[pos].ty == '+') {
-        ++pos;
-        return new_node('+', lhs, expr());
-    }
-    if (tokens[pos].ty == '-') {
-        ++pos;
-        return new_node('-', lhs, expr());
-    }
-    return lhs;
+// Parse a term (number or expression in pair of parentheses).
+Node *term(void) {
+    if (tokens[pos].ty == TK_NUM)
+        return new_node_num(tokens[pos++].val);
+
+    if (!consume('('))
+        error("A token neither a number nor an opening parenthesis.", pos);
+    Node *node = expr();
+    if (!consume(')'))
+        error("A closing parenthesis was expected but not found.", pos);
+    return node;
 }
 
 // Generate assembly from an abstract syntax tree.
