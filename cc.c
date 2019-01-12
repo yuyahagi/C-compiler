@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -8,6 +9,7 @@
 // Tokens defined as a single letter is directly expressed as its ASCII code.
 enum {
     TK_NUM = 256,   // Represents a number.
+    TK_IDENT,       // Represents an identifier.
     TK_EOF,         // Represents end of input.
 };
 
@@ -15,7 +17,7 @@ enum {
 typedef struct {
     int ty;         // Token type.
     char *input;    // Token string.
-    int val;        // Value of TK_NUM token.
+    int val;        // Only for TK_NUM. Value of token.
 } Token;
 
 // A buffer to store tokenized code and current position.
@@ -26,6 +28,7 @@ size_t pos = 0;
 // Tokens defined as a single letter is expressed with its ASCII code.
 enum {
     ND_NUM = 256,
+    ND_IDENT,
 };
 
 typedef struct Node {
@@ -33,6 +36,7 @@ typedef struct Node {
     struct Node *lhs;
     struct Node *rhs;
     int val;            // Value of ND_NUM node.
+    char name;          // Only for TK_IDENT.
 } Node;
 
 // A buffer to store parsed statements (ASTs).
@@ -50,6 +54,13 @@ Node *new_node_num(int val) {
     Node *node = calloc(1, sizeof(Node));
     node->ty = ND_NUM;
     node->val = val;
+    return node;
+}
+
+Node *new_node_ident(char name) {
+    Node *node = calloc(1, sizeof(Node));
+    node->ty = ND_IDENT;
+    node->name = name;
     return node;
 }
 
@@ -71,6 +82,16 @@ void tokenize(char *p) {
             continue;
         }
 
+        // Identifiers.
+        // Only suport single-letter lower-case aphabet for now.
+        if ('a' <= *p && *p <= 'z') {
+            tokens[i].ty = TK_IDENT;
+            tokens[i].input = p;
+            ++i;
+            ++p;
+            continue;
+        }
+
         // One-letter tokens.
         switch (*p) {
         case '+':
@@ -80,6 +101,7 @@ void tokenize(char *p) {
         case '(':
         case ')':
         case ';':
+        case '=':
             tokens[i].ty = *p;
             tokens[i].input = p;
             ++i;
@@ -96,15 +118,16 @@ void tokenize(char *p) {
 }
 
 // Parse an expression to an abstract syntax tree.
-// program: {statement}*
-// statement: expr ";"
-// expr: mul expr'
-// expr': '' | "+" expr' | "-" expr'
+// program: {assign}*
+// assign: add assign' ";"
+// assign': '' | "=" assign'
+// add: mul add'
+// add': '' | "+" add' | "-" add'
 // mul: term | term "*" mul | term "/" mul
-// term: num | "(" expr ")"
+// term: num | "(" add ")"
 void program(void);
-Node *statement(void);
-Node *expr(void);
+Node *assign(void);
+Node *add(void);
 Node *mul(void);
 Node *term(void);
 
@@ -133,26 +156,29 @@ void error(const char *msg, size_t i) {
 void program(void) {
     int i = 0;
     while(tokens[pos].ty != TK_EOF) {
-        code[i++] = statement();
+        code[i++] = assign();
     }
     return;
 }
 
-Node *statement(void) {
-    Node *node = expr();
-    if (!consume(';'))
-        error("A statement not terminated with ';'.", pos);
-    return node;
+Node *assign(void) {
+    Node *lhs = add();
+    if (consume('='))
+        return new_node('=', lhs, assign());
+    if (consume(';'))
+        return lhs;
+    error("A statement not terminated with ';'.", pos);
+    return NULL;
 }
 
 // Parse an expression.
-Node *expr(void) {
+Node *add(void) {
     Node *lhs = mul();
     if (consume('+')) {
-        return new_node('+', lhs, expr());
+        return new_node('+', lhs, add());
     }
     if (consume('-')) {
-        return new_node('-', lhs, expr());
+        return new_node('-', lhs, add());
     }
 
     return lhs;
@@ -177,19 +203,52 @@ Node *mul(void) {
 Node *term(void) {
     if (tokens[pos].ty == TK_NUM)
         return new_node_num(tokens[pos++].val);
+    if (tokens[pos].ty == TK_IDENT)
+        return new_node_ident(tokens[pos++].input[0]);
 
     if (!consume('('))
         error("A token neither a number nor an opening parenthesis.", pos);
-    Node *node = expr();
+    Node *node = add();
     if (!consume(')'))
         error("A closing parenthesis was expected but not found.", pos);
     return node;
 }
 
 // Generate assembly from an abstract syntax tree.
+void gen_lval(Node *node) {
+    if (node->ty != ND_IDENT) {
+        fprintf(stderr, "Not an identifier.\n");
+        exit(1);
+    }
+
+    int offset = -8 * (node->name - 'a' + 1);
+
+    printf("  lea rax, [rbp+%d]\n", offset);
+    printf("  push rax\n");
+}
+
 void gen(Node *node) {
     if (node->ty == ND_NUM) {
         printf("  push %d\n", node->val);
+        return;
+    }
+
+    if (node->ty == ND_IDENT) {
+        gen_lval(node);
+        printf("  pop rax\n");
+        printf("  mov rax, [rax]\n");
+        printf("  push rax\n");
+        return;
+    }
+
+    if (node->ty == '=') {
+        gen_lval(node->lhs);
+        gen(node->rhs);
+
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  mov [rax], rdi\n");
+        printf("  push rdi\n");
         return;
     }
 
@@ -233,6 +292,10 @@ int main(int argc, char **argv) {
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");
     printf("main:\n");
+    printf("  push rbp\n");
+    printf("  mov rbp, rsp\n");
+    // Space for 26 local variables (== 208 bytes).
+    printf("  sub rsp, 208\n");
 
     // Generate assembly from the ASTs.
     for (int i = 0; code[i]; i++) {
@@ -243,6 +306,8 @@ int main(int argc, char **argv) {
         printf("  pop rax\n");
     }
 
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp\n");
     printf("  ret\n");
     return 0;
 }
