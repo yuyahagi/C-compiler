@@ -3,6 +3,9 @@ cc
 *~
 tmp*
 
+# Ctags
+tags
+
 # Prerequisites
 *.d
 

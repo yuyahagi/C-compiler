@@ -60,6 +60,22 @@ void tokenize(char *p) {
             continue;
         }
 
+        // Equality and nonequality operators.
+        if (*p == '=' && *(p+1) == '=') {
+            tokens[i].ty = TK_EQUAL;
+            tokens[i].input = p;
+            ++i;
+            p += 2;
+            continue;
+        }
+        if (*p == '!' && *(p+1) == '=') {
+            tokens[i].ty = TK_NOTEQUAL;
+            tokens[i].input = p;
+            ++i;
+            p += 2;
+            continue;
+        }
+
         // One-letter tokens.
         switch (*p) {
         case '+':
@@ -115,9 +131,12 @@ void error(const char *msg, size_t i) {
 }
 
 // Parse an expression to an abstract syntax tree.
-// program: {assign}*
-// assign: add assign' ";"
+// program: {statement}*
+// statement: assign ";"
+// assign: equal assign'
 // assign': '' | "=" assign'
+// equal: add equal'
+// equal': '' | "==" equal | "!=" equal
 // add: mul add'
 // add': '' | "+" add' | "-" add'
 // mul: term | term "*" mul | term "/" mul
@@ -125,22 +144,38 @@ void error(const char *msg, size_t i) {
 void program(void) {
     int i = 0;
     while(tokens[pos].ty != TK_EOF) {
-        code[i++] = assign();
+        code[i++] = statement();
     }
     return;
 }
 
-Node *assign(void) {
-    Node *lhs = add();
-    if (consume('='))
-        return new_node('=', lhs, assign());
-    if (consume(';'))
-        return lhs;
-    error("A statement not terminated with ';'.", pos);
-    return NULL;
+Node *statement(void) {
+    Node *node = assign();
+    if (!consume(';'))
+        error("A statement not terminated with ';'.", pos);
+    return node;
 }
 
-// Parse an expression.
+Node *assign(void) {
+    Node *lhs = equal();
+    if (consume('='))
+        return new_node('=', lhs, assign());
+    return lhs;
+}
+
+Node *equal(void) {
+    Node *lhs = add();
+    if (tokens[pos].ty == TK_EQUAL) {
+        ++pos;
+        return new_node(TK_EQUAL, lhs, equal());
+    }
+    if (tokens[pos].ty == TK_NOTEQUAL) {
+        ++pos;
+        return new_node(TK_NOTEQUAL, lhs, equal());
+    }
+    return lhs;
+}
+
 Node *add(void) {
     Node *lhs = mul();
     if (consume('+')) {

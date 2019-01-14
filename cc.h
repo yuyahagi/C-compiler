@@ -10,6 +10,8 @@
 enum {
     TK_NUM = 256,   // Represents a number.
     TK_IDENT,       // Represents an identifier.
+    TK_EQUAL,       // Equality operator "==".
+    TK_NOTEQUAL,    // Nonequality operator "!=".
     TK_EOF,         // Represents end of input.
 };
 
@@ -35,6 +37,8 @@ void tokenize(char *p);
 enum {
     ND_NUM = 256,
     ND_IDENT,
+    ND_EQUAL,
+    ND_NOTEQUAL,
 };
 
 typedef struct Node {
@@ -54,7 +58,9 @@ Node *new_node_ident(char name);
 
 // Function to parse an expression to abstract syntax trees.
 void program(void);
+Node *statement(void);
 Node *assign(void);
+Node *equal(void);
 Node *add(void);
 Node *mul(void);
 Node *term(void);

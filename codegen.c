@@ -59,8 +59,20 @@ void gen(Node *node) {
         printf("  xor rdx, rdx\n");
         printf("  div rdi\n");
         break;
+    case ND_EQUAL:
+        printf("  cmp rax, rdi\n");
+        printf("  sete al\n");
+        printf("  movzb rax, al\n");
+        break;
+    case ND_NOTEQUAL:
+        printf("  cmp rax, rdi\n");
+        printf("  setne al\n");
+        printf("  movzb rax, al\n");
+        break;
     default:
-        fprintf(stderr, "An unexpected operator type during assembly generation.\n");
+        fprintf(stderr, "An unexpected operator type %d during assembly generation.\n",
+                node->ty);
+        exit(1);
     }
 
     printf("  push rax\n");
