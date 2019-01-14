@@ -1,6 +1,11 @@
 CFLAGS=-Wall -Wextra -pedantic -std=c11 -g
+SRCS=$(wildcard *.c)
+OBJS=$(SRCS:.c=.o)
 
-cc: cc.c
+cc: $(OBJS)
+	cc $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
+
+$(OBJS): cc.h
 
 test: cc
 	./test.sh

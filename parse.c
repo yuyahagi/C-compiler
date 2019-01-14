@@ -1,47 +1,15 @@
 #include <ctype.h>
-#include <inttypes.h>
 #include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-
-// Token types.
-// Tokens defined as a single letter is directly expressed as its ASCII code.
-enum {
-    TK_NUM = 256,   // Represents a number.
-    TK_IDENT,       // Represents an identifier.
-    TK_EOF,         // Represents end of input.
-};
-
-// Structure for token information.
-typedef struct {
-    int ty;         // Token type.
-    char *input;    // Token string.
-    int val;        // Only for TK_NUM. Value of token.
-} Token;
+#include "cc.h"
 
 // A buffer to store tokenized code and current position.
 Token tokens[100];
 size_t pos = 0;
 
-// Node types.
-// Tokens defined as a single letter is expressed with its ASCII code.
-enum {
-    ND_NUM = 256,
-    ND_IDENT,
-};
-
-typedef struct Node {
-    int ty;             // Type of node.
-    struct Node *lhs;
-    struct Node *rhs;
-    int val;            // Value of ND_NUM node.
-    char name;          // Only for TK_IDENT.
-} Node;
-
-// A buffer to store parsed statements (ASTs).
-Node *code[100];
-
+// =============================================================================
+// Tokenization.
+// =============================================================================
 Node *new_node(int ty, Node *lhs, Node *rhs) {
     Node *node = calloc(1, sizeof(Node));
     node->ty = ty;
@@ -117,20 +85,13 @@ void tokenize(char *p) {
     tokens[i].input = p;
 }
 
-// Parse an expression to an abstract syntax tree.
-// program: {assign}*
-// assign: add assign' ";"
-// assign': '' | "=" assign'
-// add: mul add'
-// add': '' | "+" add' | "-" add'
-// mul: term | term "*" mul | term "/" mul
-// term: num | "(" add ")"
-void program(void);
-Node *assign(void);
-Node *add(void);
-Node *mul(void);
-Node *term(void);
+// =============================================================================
+// Parse tokens into abstract syntax trees.
+// =============================================================================
+// A buffer to store parsed statements (ASTs).
+Node *code[100];
 
+// Private utility functions.
 bool consume(int ty) {
     if (tokens[pos].ty == ty) {
         ++pos;
@@ -153,6 +114,14 @@ void error(const char *msg, size_t i) {
     exit(1);
 }
 
+// Parse an expression to an abstract syntax tree.
+// program: {assign}*
+// assign: add assign' ";"
+// assign': '' | "=" assign'
+// add: mul add'
+// add': '' | "+" add' | "-" add'
+// mul: term | term "*" mul | term "/" mul
+// term: num | "(" add ")"
 void program(void) {
     int i = 0;
     while(tokens[pos].ty != TK_EOF) {
@@ -214,100 +183,3 @@ Node *term(void) {
     return node;
 }
 
-// Generate assembly from an abstract syntax tree.
-void gen_lval(Node *node) {
-    if (node->ty != ND_IDENT) {
-        fprintf(stderr, "Not an identifier.\n");
-        exit(1);
-    }
-
-    int offset = -8 * (node->name - 'a' + 1);
-
-    printf("  lea rax, [rbp+%d]\n", offset);
-    printf("  push rax\n");
-}
-
-void gen(Node *node) {
-    if (node->ty == ND_NUM) {
-        printf("  push %d\n", node->val);
-        return;
-    }
-
-    if (node->ty == ND_IDENT) {
-        gen_lval(node);
-        printf("  pop rax\n");
-        printf("  mov rax, [rax]\n");
-        printf("  push rax\n");
-        return;
-    }
-
-    if (node->ty == '=') {
-        gen_lval(node->lhs);
-        gen(node->rhs);
-
-        printf("  pop rdi\n");
-        printf("  pop rax\n");
-        printf("  mov [rax], rdi\n");
-        printf("  push rdi\n");
-        return;
-    }
-
-    gen(node->lhs);
-    gen(node->rhs);
-
-    printf("  pop rdi\n");
-    printf("  pop rax\n");
-
-    switch (node->ty) {
-    case '+':
-        printf("  add rax, rdi\n");
-        break;
-    case '-':
-        printf("  sub rax, rdi\n");
-        break;
-    case '*':
-        printf("  mul rdi\n");
-        break;
-    case '/':
-        printf("  xor rdx, rdx\n");
-        printf("  div rdi\n");
-        break;
-    default:
-        fprintf(stderr, "An unexpected operator type during assembly generation.\n");
-    }
-
-    printf("  push rax\n");
-}
-
-int main(int argc, char **argv) {
-    if (argc != 2) {
-        fprintf(stderr, "Invalid number of arguments.\n");
-        return 1;
-    }
-
-    // Tokenize and parse to abstract syntax tree.
-    tokenize(argv[1]);
-    program();
-
-    printf(".intel_syntax noprefix\n");
-    printf(".global main\n");
-    printf("main:\n");
-    printf("  push rbp\n");
-    printf("  mov rbp, rsp\n");
-    // Space for 26 local variables (== 208 bytes).
-    printf("  sub rsp, 208\n");
-
-    // Generate assembly from the ASTs.
-    for (int i = 0; code[i]; i++) {
-        gen(code[i]);
-
-        // The value of the entire expression is at the top of the stack.
-        // Pop it to keep the correct counting.
-        printf("  pop rax\n");
-    }
-
-    printf("  mov rsp, rbp\n");
-    printf("  pop rbp\n");
-    printf("  ret\n");
-    return 0;
-}
