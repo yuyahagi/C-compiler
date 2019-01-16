@@ -27,8 +27,9 @@ int main(int argc, char **argv) {
     printf("  sub rsp, 208\n");
 
     // Generate assembly from the ASTs.
-    for (int i = 0; code[i]; i++) {
-        gen(code[i]);
+    Node **currentNode = (Node **)code->data;
+    while (*currentNode) {
+        gen(*currentNode++);
 
         // The value of the entire expression is at the top of the stack.
         // Pop it to keep the correct counting.

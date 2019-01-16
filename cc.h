@@ -36,7 +36,7 @@ typedef struct {
 } Token;
 
 // A buffer to store tokenized code and current position.
-extern Token tokens[100];
+extern Vector *tokens;
 extern size_t pos;
 
 void tokenize(char *p);
@@ -63,7 +63,7 @@ typedef struct Node {
 } Node;
 
 // A buffer to store parsed statements (ASTs).
-extern Node *code[100];
+extern Vector *code;
 
 Node *new_node(int ty, Node *lhs, Node *rhs);
 Node *new_node_num(int val);

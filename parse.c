@@ -4,7 +4,7 @@
 #include "cc.h"
 
 // A buffer to store tokenized code and current position.
-Token tokens[100];
+Vector *tokens;
 size_t pos = 0;
 
 // =============================================================================
@@ -32,9 +32,23 @@ Node *new_node_ident(char name) {
     return node;
 }
 
+// A helper function to create and stroe a token.
+static void push_token(int ty, const char *input, int val) {
+    Token *tok = calloc(1, sizeof(Token));
+    tok->ty = ty;
+    tok->input = input;
+    tok->val = val;
+    vec_push(tokens, (void *)tok);
+}
+
+// A helper function to retrieve a token at a given position.
+static Token *get_token(int i) {
+    return (Token *)tokens->data[i];
+}
+
 // Split input string and store to a buffer.
 void tokenize(char *p) {
-    int i = 0;
+    tokens = new_vector();
     while (*p) {
         // Skip white spaces.
         if (isspace(*p)) {
@@ -43,35 +57,26 @@ void tokenize(char *p) {
         }
 
         if (isdigit(*p)) {
-            tokens[i].ty = TK_NUM;
-            tokens[i].input = p;
-            tokens[i].val = strtol(p, &p, 10);
-            ++i;
+            push_token(TK_NUM, p, strtol(p, &p, 10));
             continue;
         }
 
         // Identifiers.
         // Only suport single-letter lower-case aphabet for now.
         if ('a' <= *p && *p <= 'z') {
-            tokens[i].ty = TK_IDENT;
-            tokens[i].input = p;
-            ++i;
+            push_token(TK_IDENT, p, 0);
             ++p;
             continue;
         }
 
         // Equality and nonequality operators.
         if (*p == '=' && *(p+1) == '=') {
-            tokens[i].ty = TK_EQUAL;
-            tokens[i].input = p;
-            ++i;
+            push_token(TK_EQUAL, p, 0);
             p += 2;
             continue;
         }
         if (*p == '!' && *(p+1) == '=') {
-            tokens[i].ty = TK_NOTEQUAL;
-            tokens[i].input = p;
-            ++i;
+            push_token(TK_NOTEQUAL, p, 0);
             p += 2;
             continue;
         }
@@ -86,9 +91,7 @@ void tokenize(char *p) {
         case ')':
         case ';':
         case '=':
-            tokens[i].ty = *p;
-            tokens[i].input = p;
-            ++i;
+            push_token(*p, p, 0);
             ++p;
             continue;
         }
@@ -97,19 +100,18 @@ void tokenize(char *p) {
         exit(1);
     }
 
-    tokens[i].ty = TK_EOF;
-    tokens[i].input = p;
+    push_token(TK_EOF, p, 0);
 }
 
 // =============================================================================
 // Parse tokens into abstract syntax trees.
 // =============================================================================
 // A buffer to store parsed statements (ASTs).
-Node *code[100];
+Vector *code;
 
 // Private utility functions.
 static bool consume(int ty) {
-    if (tokens[pos].ty == ty) {
+    if (get_token(pos)->ty == ty) {
         ++pos;
         return true;
     } else {
@@ -118,15 +120,15 @@ static bool consume(int ty) {
 }
 
 static void expect(int ty) {
-    if (tokens[pos].ty != ty) {
-        fprintf(stderr, "A token of type %d expected but was %d.\n", ty, tokens[pos].ty);
+    if (get_token(pos)->ty != ty) {
+        fprintf(stderr, "A token of type %d expected but was %d.\n", ty, get_token(pos)->ty);
         exit(1);
     }
 }
 
 // A function to report parsing errors.
 void error(const char *msg, size_t i) {
-    fprintf(stderr, "%s \"%s\"\n", msg, tokens[i].input);
+    fprintf(stderr, "%s \"%s\"\n", msg, get_token(i)->input);
     exit(1);
 }
 
@@ -142,10 +144,12 @@ void error(const char *msg, size_t i) {
 // mul: term | term "*" mul | term "/" mul
 // term: num | "(" add ")"
 void program(void) {
-    int i = 0;
-    while(tokens[pos].ty != TK_EOF) {
-        code[i++] = statement();
+    code = new_vector();
+    pos = 0;
+    while (get_token(pos)->ty != TK_EOF) {
+        vec_push(code, (void *)statement());
     }
+    vec_push(code, (void *)NULL);
     return;
 }
 
@@ -165,11 +169,11 @@ Node *assign(void) {
 
 Node *equal(void) {
     Node *lhs = add();
-    if (tokens[pos].ty == TK_EQUAL) {
+    if (get_token(pos)->ty == TK_EQUAL) {
         ++pos;
         return new_node(TK_EQUAL, lhs, equal());
     }
-    if (tokens[pos].ty == TK_NOTEQUAL) {
+    if (get_token(pos)->ty == TK_NOTEQUAL) {
         ++pos;
         return new_node(TK_NOTEQUAL, lhs, equal());
     }
@@ -191,7 +195,7 @@ Node *add(void) {
 // Parse a multiplicative expression.
 Node *mul(void) {
     Node *lhs = term();
-    switch(tokens[pos].ty) {
+    switch(get_token(pos)->ty) {
     case '*':
         ++pos;
         return new_node('*', lhs, mul());
@@ -205,10 +209,10 @@ Node *mul(void) {
 
 // Parse a term (number or expression in pair of parentheses).
 Node *term(void) {
-    if (tokens[pos].ty == TK_NUM)
-        return new_node_num(tokens[pos++].val);
-    if (tokens[pos].ty == TK_IDENT)
-        return new_node_ident(tokens[pos++].input[0]);
+    if (get_token(pos)->ty == TK_NUM)
+        return new_node_num(get_token(pos++)->val);
+    if (get_token(pos)->ty == TK_IDENT)
+        return new_node_ident(get_token(pos++)->input[0]);
 
     if (!consume('('))
         error("A token neither a number nor an opening parenthesis.", pos);
