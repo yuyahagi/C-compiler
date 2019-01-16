@@ -8,6 +8,7 @@ cc: $(OBJS)
 $(OBJS): cc.h
 
 test: cc
+	./cc -test
 	./test.sh
 
 clean:

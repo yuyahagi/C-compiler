@@ -108,7 +108,7 @@ void tokenize(char *p) {
 Node *code[100];
 
 // Private utility functions.
-bool consume(int ty) {
+static bool consume(int ty) {
     if (tokens[pos].ty == ty) {
         ++pos;
         return true;
@@ -117,7 +117,7 @@ bool consume(int ty) {
     }
 }
 
-void expect(int ty) {
+static void expect(int ty) {
     if (tokens[pos].ty != ty) {
         fprintf(stderr, "A token of type %d expected but was %d.\n", ty, tokens[pos].ty);
         exit(1);
