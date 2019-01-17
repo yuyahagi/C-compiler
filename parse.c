@@ -33,7 +33,7 @@ Node *new_node_ident(char name) {
 }
 
 // A helper function to create and stroe a token.
-static void push_token(int ty, const char *input, int val) {
+static void push_token(int ty, char *input, int val) {
     Token *tok = calloc(1, sizeof(Token));
     tok->ty = ty;
     tok->input = input;
