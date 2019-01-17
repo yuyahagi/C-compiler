@@ -1,27 +1,49 @@
 #include <stdio.h>
 #include "cc.h"
 
+// =============================================================================
+// Count identifiers in an AST.
+// =============================================================================
+static void idents_in_statement(const Node *node, Map *idents) {
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+    if (node->ty == '=' && node->lhs && node->lhs->ty == ND_IDENT) {
+        map_put(idents, node->lhs->name, (void *)(-8 * (idents->keys->len+1)));
+    }
+    if (node->lhs) idents_in_statement(node->lhs, idents);
+    if (node->rhs) idents_in_statement(node->rhs, idents);
+}
+
+Map *idents_in_code(const Vector *code) {
+    Map *idents = new_map();
+    Node **current = (Node **)code->data;
+    while (*current) {
+        idents_in_statement(*current, idents);
+        ++current;
+    }
+    return idents;
+}
+
 // Generate assembly from an abstract syntax tree.
-void gen_lval(Node *node) {
+void gen_lval(Node *node, const Map *idents) {
+#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
     if (node->ty != ND_IDENT) {
         fprintf(stderr, "Not an identifier.\n");
         exit(1);
     }
 
-    int offset = -8 * (node->name - 'a' + 1);
-
+    int offset = (int)map_get(idents, node->name);
     printf("  lea rax, [rbp+%d]\n", offset);
     printf("  push rax\n");
 }
 
-void gen(Node *node) {
+void gen(Node *node, const Map *idents) {
     if (node->ty == ND_NUM) {
         printf("  push %d\n", node->val);
         return;
     }
 
     if (node->ty == ND_IDENT) {
-        gen_lval(node);
+        gen_lval(node, idents);
         printf("  pop rax\n");
         printf("  mov rax, [rax]\n");
         printf("  push rax\n");
@@ -29,8 +51,8 @@ void gen(Node *node) {
     }
 
     if (node->ty == '=') {
-        gen_lval(node->lhs);
-        gen(node->rhs);
+        gen_lval(node->lhs, idents);
+        gen(node->rhs, idents);
 
         printf("  pop rdi\n");
         printf("  pop rax\n");
@@ -39,8 +61,8 @@ void gen(Node *node) {
         return;
     }
 
-    gen(node->lhs);
-    gen(node->rhs);
+    gen(node->lhs, idents);
+    gen(node->rhs, idents);
 
     printf("  pop rdi\n");
     printf("  pop rax\n");

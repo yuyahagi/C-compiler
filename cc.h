@@ -22,7 +22,7 @@ typedef struct {
 
 Map *new_map();
 void map_put(Map *map, char *key, void *val);
-void *map_get(Map *map, char *key);
+void *map_get(const Map *map, const char *key);
 
 
 // =============================================================================
@@ -43,6 +43,7 @@ typedef struct {
     int ty;         // Token type.
     char *input;    // Token string.
     int val;        // Only for TK_NUM. Value of token.
+    int len;        // Length of the token string.
 } Token;
 
 // A buffer to store tokenized code and current position.
@@ -69,7 +70,7 @@ typedef struct Node {
     struct Node *lhs;
     struct Node *rhs;
     int val;            // Value of ND_NUM node.
-    char name;          // Only for TK_IDENT.
+    char *name;          // Only for TK_IDENT.
 } Node;
 
 // A buffer to store parsed statements (ASTs).
@@ -77,7 +78,7 @@ extern Vector *code;
 
 Node *new_node(int ty, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
-Node *new_node_ident(char name);
+Node *new_node_ident(const Token *tok);
 
 // Function to parse an expression to abstract syntax trees.
 void program(void);
@@ -92,5 +93,9 @@ Node *term(void);
 // =============================================================================
 // Assembly generation.
 // =============================================================================
-void gen(Node *node);
-void gen_lval(Node *node);
+// Count identifiers in a compound statement and assign offset.
+Map *idents_in_code(const Vector *code);
+
+// Assembly generation.
+void gen(Node *node, const Map *idents);
+void gen_lval(Node *node, const Map *idents);

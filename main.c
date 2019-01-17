@@ -23,13 +23,16 @@ int main(int argc, char **argv) {
     printf("main:\n");
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
-    // Space for 26 local variables (== 208 bytes).
-    printf("  sub rsp, 208\n");
+    
+    // Count number of used identifiers and allocate stack for local variables.
+    // If an identifier gets redefined, it may count it twice or more but it's ok.
+    Map *idents = idents_in_code(code);
+    printf("  sub rsp, %d\n", 8 * idents->keys->len);
 
     // Generate assembly from the ASTs.
     Node **currentNode = (Node **)code->data;
     while (*currentNode) {
-        gen(*currentNode++);
+        gen(*currentNode++, idents);
 
         // The value of the entire expression is at the top of the stack.
         // Pop it to keep the correct counting.

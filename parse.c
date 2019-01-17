@@ -1,11 +1,13 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include "cc.h"
 
 // A buffer to store tokenized code and current position.
 Vector *tokens;
 size_t pos = 0;
+
 
 // =============================================================================
 // Tokenization.
@@ -25,19 +27,24 @@ Node *new_node_num(int val) {
     return node;
 }
 
-Node *new_node_ident(char name) {
+Node *new_node_ident(const Token *tok) {
     Node *node = calloc(1, sizeof(Node));
     node->ty = ND_IDENT;
-    node->name = name;
+    // Copy identifier name.
+    size_t len = tok->len;
+    node->name = malloc(len + 1);
+    strncpy(node->name, tok->input, len);
+    node->name[len] = '\0';
     return node;
 }
 
 // A helper function to create and stroe a token.
-static void push_token(int ty, char *input, int val) {
+static void push_token(int ty, char *input, int val, int len) {
     Token *tok = calloc(1, sizeof(Token));
     tok->ty = ty;
     tok->input = input;
     tok->val = val;
+    tok->len = len;
     vec_push(tokens, (void *)tok);
 }
 
@@ -57,26 +64,30 @@ void tokenize(char *p) {
         }
 
         if (isdigit(*p)) {
-            push_token(TK_NUM, p, strtol(p, &p, 10));
+            const char *p0 = p;
+            push_token(TK_NUM, p, strtol(p, &p, 10), p - p0);
             continue;
         }
 
         // Identifiers.
         // Only suport single-letter lower-case aphabet for now.
-        if ('a' <= *p && *p <= 'z') {
-            push_token(TK_IDENT, p, 0);
-            ++p;
+        if (isalpha(*p) || *p == '_') {
+            char *p0 = p;
+            do
+                ++p;
+            while (isalpha(*p) || isdigit(*p) || *p == '_');
+            push_token(TK_IDENT, p0, 0, p - p0);
             continue;
         }
 
         // Equality and nonequality operators.
         if (*p == '=' && *(p+1) == '=') {
-            push_token(TK_EQUAL, p, 0);
+            push_token(TK_EQUAL, p, 0, 2);
             p += 2;
             continue;
         }
         if (*p == '!' && *(p+1) == '=') {
-            push_token(TK_NOTEQUAL, p, 0);
+            push_token(TK_NOTEQUAL, p, 0, 2);
             p += 2;
             continue;
         }
@@ -91,7 +102,7 @@ void tokenize(char *p) {
         case ')':
         case ';':
         case '=':
-            push_token(*p, p, 0);
+            push_token(*p, p, 0, 1);
             ++p;
             continue;
         }
@@ -100,7 +111,7 @@ void tokenize(char *p) {
         exit(1);
     }
 
-    push_token(TK_EOF, p, 0);
+    push_token(TK_EOF, p, 0, 0);
 }
 
 // =============================================================================
@@ -212,7 +223,7 @@ Node *term(void) {
     if (get_token(pos)->ty == TK_NUM)
         return new_node_num(get_token(pos++)->val);
     if (get_token(pos)->ty == TK_IDENT)
-        return new_node_ident(get_token(pos++)->input[0]);
+        return new_node_ident(get_token(pos++));
 
     if (!consume('('))
         error("A token neither a number nor an opening parenthesis.", pos);
