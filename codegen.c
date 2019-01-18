@@ -37,20 +37,25 @@ void gen_lval(Node *node, const Map *idents) {
 }
 
 void gen(Node *node, const Map *idents) {
-    if (node->ty == ND_NUM) {
+    switch (node->ty) {
+    case ND_NUM:
         printf("  push %d\n", node->val);
         return;
-    }
 
-    if (node->ty == ND_IDENT) {
+    case ND_IDENT:
         gen_lval(node, idents);
         printf("  pop rax\n");
         printf("  mov rax, [rax]\n");
         printf("  push rax\n");
         return;
-    }
 
-    if (node->ty == '=') {
+    case ND_CALL:
+        printf("  xor rax, rax\n");
+        printf("  call %s\n", node->name);
+        printf("  push rax\n");
+        return;
+
+    case '=':
         gen_lval(node->lhs, idents);
         gen(node->rhs, idents);
 

@@ -152,7 +152,8 @@ void error(const char *msg, size_t i) {
 // equal': '' | "==" equal | "!=" equal
 // add: mul add'
 // add': '' | "+" add' | "-" add'
-// mul: term | term "*" mul | term "/" mul
+// mul: postfix | postfix "*" mul | postfix "/" mul
+// postfix: term | term "(" ")"
 // term: num | "(" add ")"
 void program(void) {
     code = new_vector();
@@ -205,7 +206,7 @@ Node *add(void) {
 
 // Parse a multiplicative expression.
 Node *mul(void) {
-    Node *lhs = term();
+    Node *lhs = postfix();
     switch(get_token(pos)->ty) {
     case '*':
         ++pos;
@@ -216,6 +217,20 @@ Node *mul(void) {
     default:
         return lhs;
     }
+}
+
+Node *postfix(void) {
+    Node *node = term();
+    if (!consume('('))
+        return node;
+
+    if (!consume(')')) {
+        error("No closing parenthesis ')' for function call.", pos);
+        exit(1);
+    }
+
+    node->ty = ND_CALL;
+    return node;
 }
 
 // Parse a term (number or expression in pair of parentheses).

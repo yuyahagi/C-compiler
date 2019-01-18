@@ -63,6 +63,7 @@ enum {
     ND_IDENT,
     ND_EQUAL,
     ND_NOTEQUAL,
+    ND_CALL,
 };
 
 typedef struct Node {
@@ -87,6 +88,7 @@ Node *assign(void);
 Node *equal(void);
 Node *add(void);
 Node *mul(void);
+Node *postfix(void);
 Node *term(void);
 
 
