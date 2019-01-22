@@ -71,7 +71,8 @@ typedef struct Node {
     struct Node *lhs;
     struct Node *rhs;
     int val;            // Value of ND_NUM node.
-    char *name;          // Only for TK_IDENT.
+    char *name;         // For identifiers.
+    Vector *args;       // For function calls.
 } Node;
 
 // A buffer to store parsed statements (ASTs).

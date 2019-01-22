@@ -94,12 +94,13 @@ void tokenize(char *p) {
 
         // One-letter tokens.
         switch (*p) {
-        case '+':
-        case '-':
-        case '*':
-        case '/':
         case '(':
         case ')':
+        case '*':
+        case '+':
+        case ',':
+        case '-':
+        case '/':
         case ';':
         case '=':
             push_token(*p, p, 0, 1);
@@ -224,12 +225,23 @@ Node *postfix(void) {
     if (!consume('('))
         return node;
 
+    // Function call.
+    node->ty = ND_CALL;
+    node->args = new_vector();
+
+    // Nullary function call.
+    if (consume(')'))
+        return node;
+
+    // List arguments.
+    vec_push(node->args, assign());
+    while (consume(','))
+        vec_push(node->args, assign());
     if (!consume(')')) {
         error("No closing parenthesis ')' for function call.", pos);
         exit(1);
     }
 
-    node->ty = ND_CALL;
     return node;
 }
 

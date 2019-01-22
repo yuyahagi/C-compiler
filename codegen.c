@@ -49,11 +49,21 @@ void gen(Node *node, const Map *idents) {
         printf("  push rax\n");
         return;
 
-    case ND_CALL:
+    case ND_CALL: {
+        int nargs = node->args->len;
+        int nregargs = nargs <= 6 ? nargs : 6;
+        int nstackargs = nargs - nregargs;
+        char *regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
+        for (int i = nargs - 1; i >= 0; i--)
+            gen(node->args->data[i], idents);
+        for (int i = 0; i < nregargs; i++)
+            printf("  pop %s\n", regs[i]);
+        // TODO: Align rsp to 16 bytes.
         printf("  xor rax, rax\n");
         printf("  call %s\n", node->name);
         printf("  push rax\n");
         return;
+    }
 
     case '=':
         gen_lval(node->lhs, idents);
