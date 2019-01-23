@@ -84,6 +84,8 @@ Node *new_node_ident(const Token *tok);
 
 // Function to parse an expression to abstract syntax trees.
 void program(void);
+Node *funcdef(void);
+Node *compound(void);
 Node *statement(void);
 Node *assign(void);
 Node *equal(void);

@@ -103,6 +103,8 @@ void tokenize(char *p) {
         case '/':
         case ';':
         case '=':
+        case '{':
+        case '}':
             push_token(*p, p, 0, 1);
             ++p;
             continue;
@@ -145,7 +147,9 @@ void error(const char *msg, size_t i) {
 }
 
 // Parse an expression to an abstract syntax tree.
-// program: {statement}*
+// program: {funcdef}*
+// funcdef: ident "(" parameter-list ")" compound
+// compound: "{" {statement}* "}"
 // statement: assign ";"
 // assign: equal assign'
 // assign': '' | "=" assign'
@@ -157,13 +161,33 @@ void error(const char *msg, size_t i) {
 // postfix: term | term "(" ")"
 // term: num | "(" add ")"
 void program(void) {
-    code = new_vector();
     pos = 0;
-    while (get_token(pos)->ty != TK_EOF) {
+    funcdef();
+}
+
+Node *funcdef(void) {
+    Token *tok = get_token(pos);
+    if (tok->ty != TK_IDENT || tok->len != 4 || strncmp("main", tok->input, tok->len) != 0)
+        error("Definition of main() expected but not found.\n", pos);
+    ++pos;
+    if (!consume('('))
+        error("'(' expected but not found.\n", pos);
+    if (!consume(')'))
+        error("')' expected but not found.\n", pos);
+
+    return compound();
+}
+
+Node *compound(void) {
+    if (!consume('{'))
+        error("'{' expected but not found.\n", pos);
+    
+    code = new_vector();
+    while (get_token(pos)->ty != TK_EOF && get_token(pos)->ty != '}') {
         vec_push(code, (void *)statement());
     }
     vec_push(code, (void *)NULL);
-    return;
+    return NULL;
 }
 
 Node *statement(void) {
