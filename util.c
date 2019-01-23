@@ -35,3 +35,7 @@ void *map_get(const Map *map, const char *key) {
             return map->vals->data[i];
     return NULL;
 }
+
+int max(int x0, int x1) {
+    return x0 > x1 ? x0 : x1;
+}

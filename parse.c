@@ -69,15 +69,21 @@ void tokenize(char *p) {
             continue;
         }
 
-        // Identifiers.
+        // Identifiers or keywords.
         // Only suport single-letter lower-case aphabet for now.
         if (isalpha(*p) || *p == '_') {
             char *p0 = p;
             do
                 ++p;
             while (isalpha(*p) || isdigit(*p) || *p == '_');
-            push_token(TK_IDENT, p0, 0, p - p0);
-            continue;
+            int len = p - p0;
+            if (strncmp(p0, "return", max(len, 6)) == 0) {
+                push_token(TK_RETURN, p0, 0, len);
+                continue;
+            } else {
+                push_token(TK_IDENT, p0, 0, len);
+                continue;
+            }
         }
 
         // Equality and nonequality operators.
@@ -150,7 +156,7 @@ void error(const char *msg, size_t i) {
 // program: {funcdef}*
 // funcdef: ident "(" parameter-list ")" compound
 // compound: "{" {statement}* "}"
-// statement: assign ";"
+// statement: assign ";" | "return" ";" | "return" assign ";"
 // assign: equal assign'
 // assign': '' | "=" assign'
 // equal: add equal'
@@ -167,7 +173,7 @@ void program(void) {
 
 Node *funcdef(void) {
     Token *tok = get_token(pos);
-    if (tok->ty != TK_IDENT || tok->len != 4 || strncmp("main", tok->input, tok->len) != 0)
+    if (tok->ty != TK_IDENT || strncmp("main", tok->input, max(tok->len, 4)) != 0)
         error("Definition of main() expected but not found.\n", pos);
     ++pos;
     if (!consume('('))
@@ -183,15 +189,32 @@ Node *compound(void) {
         error("'{' expected but not found.\n", pos);
     
     code = new_vector();
-    while (get_token(pos)->ty != TK_EOF && get_token(pos)->ty != '}') {
+    Token *tok = get_token(pos);
+    while (tok->ty != TK_EOF && tok->ty != ';' && tok->ty != '}') {
         vec_push(code, (void *)statement());
+        tok = get_token(pos);
     }
     vec_push(code, (void *)NULL);
     return NULL;
 }
 
 Node *statement(void) {
-    Node *node = assign();
+    Token *tok = get_token(pos);
+    Node *node = NULL;
+    switch(tok->ty) {
+    case TK_RETURN:
+        ++pos;
+        Node *rhs = NULL;
+        if (get_token(pos)->ty == ';')
+            rhs = new_node_num(0);
+        else
+            rhs = assign();
+        node = new_node(ND_RETURN, NULL, rhs);
+        break;
+    default:
+        node = assign();
+        break;
+    }
     if (!consume(';'))
         error("A statement not terminated with ';'.", pos);
     return node;

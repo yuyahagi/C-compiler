@@ -114,6 +114,16 @@ void gen(Node *node, const Map *idents) {
         return;
     }
 
+    case ND_RETURN:
+        if (node->rhs) {
+            gen(node->rhs, idents);
+            printf("  pop rax\n");
+        }
+        printf("  mov rsp, rbp\n");
+        printf("  pop rbp\n");
+        printf("  ret\n");
+        return;
+
     case '=':
         gen_lval(node->lhs, idents);
         gen(node->rhs, idents);

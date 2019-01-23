@@ -24,6 +24,8 @@ Map *new_map();
 void map_put(Map *map, char *key, void *val);
 void *map_get(const Map *map, const char *key);
 
+int max(int x0, int x1);
+
 
 // =============================================================================
 // Tokenization.
@@ -35,6 +37,7 @@ enum {
     TK_IDENT,       // Represents an identifier.
     TK_EQUAL,       // Equality operator "==".
     TK_NOTEQUAL,    // Nonequality operator "!=".
+    TK_RETURN,
     TK_EOF,         // Represents end of input.
 };
 
@@ -63,6 +66,7 @@ enum {
     ND_IDENT,
     ND_EQUAL,
     ND_NOTEQUAL,
+    ND_RETURN,
     ND_CALL,
 };
 

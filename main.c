@@ -39,6 +39,8 @@ int main(int argc, char **argv) {
         printf("  pop rax\n");
     }
 
+    // End of function. Return default int.
+    printf("  xor rax, rax\n");
     printf("  mov rsp, rbp\n");
     printf("  pop rbp\n");
     printf("  ret\n");
