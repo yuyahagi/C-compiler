@@ -20,29 +20,11 @@ int main(int argc, char **argv) {
 
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");
-    printf("main:\n");
-    printf("  push rbp\n");
-    printf("  mov rbp, rsp\n");
-    
-    // Count number of used identifiers and allocate stack for local variables.
-    // If an identifier gets redefined, it may count it twice or more but it's ok.
-    Map *idents = idents_in_code(code);
-    printf("  sub rsp, %d\n", 8 * idents->keys->len);
 
-    // Generate assembly from the ASTs.
-    Node **currentNode = (Node **)code->data;
-    while (*currentNode) {
-        gen(*currentNode++, idents);
-
-        // The value of the entire expression is at the top of the stack.
-        // Pop it to keep the correct counting.
-        printf("  pop rax\n");
+    FuncDef **func = (FuncDef **)funcdefs->data;
+    while (*func) {
+        gen_function(*func);
+        ++func;
     }
-
-    // End of function. Return default int.
-    printf("  xor rax, rax\n");
-    printf("  mov rsp, rbp\n");
-    printf("  pop rbp\n");
-    printf("  ret\n");
     return 0;
 }

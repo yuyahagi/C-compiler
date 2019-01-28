@@ -28,6 +28,7 @@ int func8(int x0, int x1, int x2, int x3, int x4, int x5, int x6, int x7) {
 
 try 0 'main() {}'
 try 0 'main() {;}'
+try 0 'main() {;;;}'
 try 0 'main() { 42; }'
 try 0 'main() { return; }'
 try 42 'main() { return 42; }'
@@ -61,5 +62,9 @@ try 21 'main() { return func2(3-2, 8/4); }'
 try 21 'main() { x = 2; return func2(3-x, 4/x); }'
 try 0 'main() { return func8(1, 2, 3, 4, 5, 6, 7, 8) - 87654321; }'
 try 0 'main() { x = 2; return func8(1, (x), x+1, x*2, 5, 2*(x+1), 3*x+1, 8) - 87654321; }'
+try 3 'foo() { return 3; } main() { return foo(); }'
+try 7 'foo() { return 3; } bar() { return 4; } main() { return foo() + bar(); }'
+try 5 'foo() { return two()+1; } main() { return foo() + two(); }'
+try 43 'foo() { return 3; } bar() { return 4; } main() { return func2(foo(), bar()); }'
 
 echo OK

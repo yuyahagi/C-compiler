@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <string.h>
 #include "cc.h"
 
@@ -15,6 +16,11 @@ void vec_push(Vector *vec, void *elem) {
         vec->data = realloc(vec->data, sizeof(void *) * vec->capacity);
     }
     vec->data[vec->len++] = elem;
+}
+
+void *vec_peek_last(Vector *vec) {
+    assert(vec->len > 0);
+    return vec->data[vec->len-1];
 }
 
 Map *new_map() {

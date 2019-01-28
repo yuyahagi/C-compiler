@@ -68,7 +68,18 @@ enum {
     ND_NOTEQUAL,
     ND_RETURN,
     ND_CALL,
+    ND_COMPOUND,    // Compound statement.
 };
+
+typedef struct {
+    Vector *code;
+} CompoundStatement;
+
+typedef struct {
+    char *name;
+    Vector *args;
+    CompoundStatement *body;
+} FuncDef;
 
 typedef struct Node {
     int ty;             // Type of node.
@@ -79,17 +90,18 @@ typedef struct Node {
     Vector *args;       // For function calls.
 } Node;
 
-// A buffer to store parsed statements (ASTs).
-extern Vector *code;
+// A buffer to store parsed functions.
+extern Vector *funcdefs;
 
 Node *new_node(int ty, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 Node *new_node_ident(const Token *tok);
+FuncDef *new_funcdef(const Token *tok);
 
 // Function to parse an expression to abstract syntax trees.
 void program(void);
-Node *funcdef(void);
-Node *compound(void);
+FuncDef *funcdef(void);
+CompoundStatement *compound(void);
 Node *statement(void);
 Node *assign(void);
 Node *equal(void);
@@ -108,3 +120,4 @@ Map *idents_in_code(const Vector *code);
 // Assembly generation.
 void gen(Node *node, const Map *idents);
 void gen_lval(Node *node, const Map *idents);
+void gen_function(FuncDef *func);

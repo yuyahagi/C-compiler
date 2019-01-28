@@ -38,6 +38,16 @@ Node *new_node_ident(const Token *tok) {
     return node;
 }
 
+FuncDef *new_funcdef(const Token *tok) {
+    FuncDef *func = calloc(1, sizeof(FuncDef));
+    size_t len = tok->len;
+    func->name = malloc(len);
+    strncpy(func->name, tok->input, len);
+    func->name[len] = '\0';
+    func->args = new_vector();
+    return func;
+}
+
 // A helper function to create and stroe a token.
 static void push_token(int ty, char *input, int val, int len) {
     Token *tok = calloc(1, sizeof(Token));
@@ -127,7 +137,7 @@ void tokenize(char *p) {
 // Parse tokens into abstract syntax trees.
 // =============================================================================
 // A buffer to store parsed statements (ASTs).
-Vector *code;
+Vector *funcdefs;
 
 // Private utility functions.
 static bool consume(int ty) {
@@ -167,41 +177,57 @@ void error(const char *msg, size_t i) {
 // postfix: term | term "(" ")"
 // term: num | "(" add ")"
 void program(void) {
+    funcdefs = new_vector();
     pos = 0;
-    funcdef();
+    while (get_token(pos)->ty != TK_EOF) {
+        vec_push(funcdefs, (void *)funcdef());
+    }
+    // Terminate with null for easier iteration.
+    vec_push(funcdefs, NULL);
 }
 
-Node *funcdef(void) {
+FuncDef *funcdef(void) {
     Token *tok = get_token(pos);
-    if (tok->ty != TK_IDENT || strncmp("main", tok->input, max(tok->len, 4)) != 0)
-        error("Definition of main() expected but not found.\n", pos);
+    if (tok->ty != TK_IDENT)
+        error("A function definition expected but not found.\n", pos);
     ++pos;
     if (!consume('('))
         error("'(' expected but not found.\n", pos);
     if (!consume(')'))
         error("')' expected but not found.\n", pos);
 
-    return compound();
+    FuncDef *func = new_funcdef(tok);
+    func->body = compound();
+    return func;
 }
 
-Node *compound(void) {
+CompoundStatement *compound(void) {
     if (!consume('{'))
         error("'{' expected but not found.\n", pos);
     
-    code = new_vector();
+    CompoundStatement *comp_stmt = calloc(1, sizeof(CompoundStatement));
+    Vector *code = new_vector();
     Token *tok = get_token(pos);
-    while (tok->ty != TK_EOF && tok->ty != ';' && tok->ty != '}') {
+    while (tok->ty != TK_EOF && tok->ty != '}') {
         vec_push(code, (void *)statement());
         tok = get_token(pos);
     }
-    vec_push(code, (void *)NULL);
-    return NULL;
+    if (!consume('}'))
+        error("A compound statement not terminated with '}'.", pos);
+
+    // Terminate with null for easier iteration.
+    vec_push(code, NULL);
+    comp_stmt->code = code;
+    return comp_stmt;
 }
 
 Node *statement(void) {
     Token *tok = get_token(pos);
     Node *node = NULL;
     switch(tok->ty) {
+    case ';':
+        // Empty statement. Skip.
+        break;
     case TK_RETURN:
         ++pos;
         Node *rhs = NULL;

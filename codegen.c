@@ -173,3 +173,34 @@ void gen(Node *node, const Map *idents) {
 
     push("rax");
 }
+
+void gen_function(FuncDef *func) {
+    stackpos = 0;
+    Vector *code = func->body->code;
+    printf("%s:\n", func->name);
+    printf("  push rbp\n");
+    printf("  mov rbp, rsp\n");
+
+    // Count number of used identifiers and allocate stack for local variables.
+    // If an identifier gets redefined, it may count it twice or more but it's ok.
+    Map *idents = idents_in_code(code);
+    printf("  sub rsp, %d\n", 8 * idents->keys->len);
+
+    // Generate assembly from the ASTs.
+    Node **currentNode = (Node **)code->data;
+    while (*currentNode) {
+        gen(*currentNode++, idents);
+
+        // The value of the entire expression is at the top of the stack.
+        // Pop it to keep the correct counting.
+        printf("  pop rax\n");
+    }
+
+    // End of function. Return default int.
+    // This will likely emit a redundant function epilogue after a return statement.
+    // It is at least functionally ok since this will not be executed.
+    printf("  xor rax, rax\n");
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp\n");
+    printf("  ret\n");
+}
