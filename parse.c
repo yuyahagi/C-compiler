@@ -150,10 +150,16 @@ static bool consume(int ty) {
 }
 
 static void expect(int ty) {
-    if (get_token(pos)->ty != ty) {
-        fprintf(stderr, "A token of type %d expected but was %d.\n", ty, get_token(pos)->ty);
-        exit(1);
+    if (get_token(pos)->ty == ty) {
+        ++pos;
+        return;
     }
+
+    if (isprint(ty))
+        fprintf(stderr, "A token of type %c expected but was %d.\n", ty, get_token(pos)->ty);
+    else
+        fprintf(stderr, "A token of type %d expected but was %d.\n", ty, get_token(pos)->ty);
+    exit(1);
 }
 
 // A function to report parsing errors.
@@ -191,12 +197,19 @@ FuncDef *funcdef(void) {
     if (tok->ty != TK_IDENT)
         error("A function definition expected but not found.\n", pos);
     ++pos;
-    if (!consume('('))
-        error("'(' expected but not found.\n", pos);
-    if (!consume(')'))
-        error("')' expected but not found.\n", pos);
 
     FuncDef *func = new_funcdef(tok);
+
+    func->args = new_vector();
+    if (!consume('('))
+        error("'(' expected but not found.\n", pos);
+    if (!consume(')')) {
+        vec_push(func->args, new_node_ident(get_token(pos++)));
+        while (consume(','))
+            vec_push(func->args, new_node_ident(get_token(pos++)));
+        expect(')');
+    }
+
     func->body = compound();
     return func;
 }

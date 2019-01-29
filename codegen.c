@@ -15,14 +15,21 @@ static void idents_in_statement(const Node *node, Map *idents) {
     if (node->rhs) idents_in_statement(node->rhs, idents);
 }
 
-Map *idents_in_code(const Vector *code) {
-    Map *idents = new_map();
+void idents_in_code(const Vector *code, Map *idents) {
     Node **current = (Node **)code->data;
     while (*current) {
         idents_in_statement(*current, idents);
         ++current;
     }
-    return idents;
+}
+
+void idents_in_func(const FuncDef *func, Map *idents) {
+    // First 6 function parameters are to be copied to the stack.
+    for (int i = 0; i < func->args->len; i++) {
+        map_put(idents, ((Node *)func->args->data[i])->name, (void *)(-8 * (idents->keys->len+1)));
+    }
+    // Count identifiers in the function body and assign offsets.
+    idents_in_code(func->body->code, idents);
 }
 
 // Track stack position for adjusting alignment.
@@ -181,10 +188,22 @@ void gen_function(FuncDef *func) {
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
 
-    // Count number of used identifiers and allocate stack for local variables.
-    // If an identifier gets redefined, it may count it twice or more but it's ok.
-    Map *idents = idents_in_code(code);
+    // Count number of used identifiers (including function parameters) and
+    // allocate stack for local variables. If an identifier gets redefined,
+    // it may count it twice or more but it's ok.
+    Map *idents = new_map();
+    idents_in_func(func, idents);
     printf("  sub rsp, %d\n", 8 * idents->keys->len);
+    stackpos += 8 * idents->keys->len;
+
+    // First 6 function parameters are in registers. Copy them to stack.
+    const char *regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
+    for (int i = 0; i < func->args->len; i++) {
+        char *param_name = ((Node *)func->args->data[i])->name;
+        int offset = map_get(idents, param_name);
+        push(regs[i]);
+        printf("  mov [rbp%+d], %s\n", offset, regs[i]);
+    }
 
     // Generate assembly from the ASTs.
     Node **currentNode = (Node **)code->data;
@@ -204,3 +223,4 @@ void gen_function(FuncDef *func) {
     printf("  pop rbp\n");
     printf("  ret\n");
 }
+

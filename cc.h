@@ -115,7 +115,8 @@ Node *term(void);
 // Assembly generation.
 // =============================================================================
 // Count identifiers in a compound statement and assign offset.
-Map *idents_in_code(const Vector *code);
+void idents_in_code(const Vector *code, Map *idents);
+void idents_in_func(const FuncDef *func, Map *idents);
 
 // Assembly generation.
 void gen(Node *node, const Map *idents);
