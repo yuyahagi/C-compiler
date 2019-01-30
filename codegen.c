@@ -25,8 +25,15 @@ void idents_in_code(const Vector *code, Map *idents) {
 
 void idents_in_func(const FuncDef *func, Map *idents) {
     // First 6 function parameters are to be copied to the stack.
-    for (int i = 0; i < func->args->len; i++) {
+    int nargs = func->args->len;
+    int nregargs = nargs <= 6 ? nargs : 6;
+    int nstackargs = nargs - nregargs;
+    for (int i = 0; i < nregargs; i++) {
         map_put(idents, ((Node *)func->args->data[i])->name, (void *)(-8 * (idents->keys->len+1)));
+    }
+    // The rest of args are in stack. Store positive offsets.
+    for (int i = nstackargs - 1; i >= 0; i--) {
+        map_put(idents, ((Node *)func->args->data[i+6])->name, (void *)(8 * (i + 1)));
     }
     // Count identifiers in the function body and assign offsets.
     idents_in_code(func->body->code, idents);
@@ -198,9 +205,11 @@ void gen_function(FuncDef *func) {
 
     // First 6 function parameters are in registers. Copy them to stack.
     const char *regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
-    for (int i = 0; i < func->args->len; i++) {
+    int nargs = func->args->len;
+    int nregargs = nargs <= 6 ? nargs : 6;
+    for (int i = 0; i < nregargs; i++) {
         char *param_name = ((Node *)func->args->data[i])->name;
-        int offset = map_get(idents, param_name);
+        int offset = (int)map_get(idents, param_name);
         push(regs[i]);
         printf("  mov [rbp%+d], %s\n", offset, regs[i]);
     }

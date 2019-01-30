@@ -68,7 +68,17 @@ try 5 'foo() { return two()+1; } main() { return foo() + two(); }'
 try 43 'foo() { return 3; } bar() { return 4; } main() { return func2(foo(), bar()); }'
 try 3 'foo(x0, x1) { return x0 + x1; } main() { return foo(1, 2); }'
 try 0 'foo(x0, x1, x2, x3, x4, x5) { return x0 + 10*x1 + 100*x2 + 1000*x3 + 10000*x4 + 100000*x5; } main() { return foo(1, 2, 3, 4, 5, 6) - 654321; }'
-try 14 'foo(x) { a = 3; return a * x; } main() { b = 2; return foo(4) + b; }'
-# TODO: Test function definition with more than 6 parameters.
+
+try 14 '
+foo(x) { a = 3; return a * x; }
+main() { b = 2; return foo(4) + b; }'
+
+try 0 '
+foo(x0, x1, x2, x3, x4, x5, x6, x7) {
+    return x0 + 10*x1 + 100*x2 + 1000*x3 + 10000*x4 + 100000*x5 + 1000000*x6 + 10000000*x7;
+}
+main() {
+    return foo(1, 2, 3, 4, 5, 6, 7, 8) - 87654321;
+}'
 
 echo OK
