@@ -86,14 +86,22 @@ void tokenize(char *p) {
             do
                 ++p;
             while (isalpha(*p) || isdigit(*p) || *p == '_');
+
             int len = p - p0;
             if (strncmp(p0, "return", max(len, 6)) == 0) {
                 push_token(TK_RETURN, p0, 0, len);
                 continue;
-            } else {
-                push_token(TK_IDENT, p0, 0, len);
+            }
+            if (strncmp(p0, "if", max(len, 2)) == 0) {
+                push_token(TK_IF, p0, 0, len);
                 continue;
             }
+            if (strncmp(p0, "else", max(len, 4)) == 0) {
+                push_token(TK_ELSE, p0, 0, len);
+                continue;
+            }
+            push_token(TK_IDENT, p0, 0, len);
+            continue;
         }
 
         // Equality and nonequality operators.
@@ -172,9 +180,10 @@ void error(const char *msg, size_t i) {
 // program: {funcdef}*
 // funcdef: ident "(" parameter-list ")" compound
 // compound: "{" {statement}* "}"
-// statement: assign ";" | "return" ";" | "return" assign ";"
+// statement: assign ";" | selection | "return" ";" | "return" assign ";"
 // assign: equal assign'
 // assign': '' | "=" assign'
+// selection: "if" "(" assign ")" statement | "if" "(" assign ")" statement "else" statement
 // equal: add equal'
 // equal': '' | "==" equal | "!=" equal
 // add: mul add'
@@ -241,6 +250,10 @@ Node *statement(void) {
     case ';':
         // Empty statement. Skip.
         break;
+    case TK_IF:
+        ++pos;
+        node = selection();
+        return node;
     case TK_RETURN:
         ++pos;
         Node *rhs = NULL;
@@ -264,6 +277,18 @@ Node *assign(void) {
     if (consume('='))
         return new_node('=', lhs, assign());
     return lhs;
+}
+
+Node *selection(void) {
+    Node *node = new_node(ND_IF, NULL, NULL);
+    expect('(');
+    node->cond = assign();
+    expect(')');
+    node->then = statement();
+    if (consume(TK_ELSE))
+        node->els = statement();
+
+    return node;
 }
 
 Node *equal(void) {

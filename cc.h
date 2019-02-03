@@ -37,6 +37,8 @@ enum {
     TK_IDENT,       // Represents an identifier.
     TK_EQUAL,       // Equality operator "==".
     TK_NOTEQUAL,    // Nonequality operator "!=".
+    TK_IF,
+    TK_ELSE,
     TK_RETURN,
     TK_EOF,         // Represents end of input.
 };
@@ -66,10 +68,13 @@ enum {
     ND_IDENT,
     ND_EQUAL,
     ND_NOTEQUAL,
+    ND_IF,
     ND_RETURN,
     ND_CALL,
     ND_COMPOUND,    // Compound statement.
 };
+
+struct Node;
 
 typedef struct {
     Vector *code;
@@ -88,6 +93,10 @@ typedef struct Node {
     int val;            // Value of ND_NUM node.
     char *name;         // For identifiers.
     Vector *args;       // For function calls.
+
+    struct Node *cond;
+    struct Node *then;
+    struct Node *els;
 } Node;
 
 // A buffer to store parsed functions.
@@ -104,6 +113,7 @@ FuncDef *funcdef(void);
 CompoundStatement *compound(void);
 Node *statement(void);
 Node *assign(void);
+Node *selection(void);
 Node *equal(void);
 Node *add(void);
 Node *mul(void);

@@ -81,4 +81,14 @@ main() {
     return foo(1, 2, 3, 4, 5, 6, 7, 8) - 87654321;
 }'
 
+try 0 'main() { if (0) return 1; return 0; }'
+try 1 'main() { if (1) return 1; return 0; }'
+try 0 'main() { if (0) return 1; else return 0; return 127; }'
+try 0 'main() { x = 3; if (x + 1 != 2 * 2) y = 1; else y = 0; if (y) return 1; else return 0; }'
+try 1 'main() { x = 3; if (x + 1 == 2 * 2) y = 1; else y = 0; if (y) return 1; else return 0; }'
+
+try 15 '
+add_upto(x) { if (x == 1) return x; else return x + add_upto(x-1); }
+main() { return add_upto(5); }'
+
 echo OK

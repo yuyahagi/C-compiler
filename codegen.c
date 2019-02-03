@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include "cc.h"
 
+// Counter for generating labels.
+static int nlabel = 0;
+
 // =============================================================================
 // Count identifiers in an AST.
 // =============================================================================
@@ -86,7 +89,8 @@ void gen(Node *node, const Map *idents) {
         push("rax");
         return;
 
-    case ND_CALL: {
+    case ND_CALL:
+    {
         int nargs = node->args->len;
         int nregargs = nargs <= 6 ? nargs : 6;
         int nstackargs = nargs - nregargs;
@@ -125,6 +129,27 @@ void gen(Node *node, const Map *idents) {
 
         push("rax");
         assert(true);
+        return;
+    }
+
+    case ND_IF:
+    {
+        int lbl_else = nlabel++;
+        int lbl_last = nlabel++;
+
+        gen(node->cond, idents);
+        pop("rax");
+        printf("  cmp rax, 0\n");
+        printf("  je .L%d\n", lbl_else);
+
+        gen(node->then, idents);
+        printf("  jmp .L%d\n", lbl_last);
+
+        printf(".L%d:\n", lbl_else);
+        if (node->els != NULL) {
+            gen(node->els, idents);
+        }
+        printf(".L%d:\n", lbl_last);
         return;
     }
 
