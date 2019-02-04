@@ -39,7 +39,7 @@ void idents_in_func(const FuncDef *func, Map *idents) {
         map_put(idents, ((Node *)func->args->data[i+6])->name, (void *)(8 * (i + 1)));
     }
     // Count identifiers in the function body and assign offsets.
-    idents_in_code(func->body->code, idents);
+    idents_in_code(func->body->stmts, idents);
 }
 
 // Track stack position for adjusting alignment.
@@ -215,7 +215,7 @@ void gen(Node *node, const Map *idents) {
 
 void gen_function(FuncDef *func) {
     stackpos = 0;
-    Vector *code = func->body->code;
+    Vector *code = func->body->stmts;
     printf("%s:\n", func->name);
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");

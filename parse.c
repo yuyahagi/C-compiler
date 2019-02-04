@@ -223,11 +223,11 @@ FuncDef *funcdef(void) {
     return func;
 }
 
-CompoundStatement *compound(void) {
+Node *compound(void) {
     if (!consume('{'))
         error("'{' expected but not found.\n", pos);
     
-    CompoundStatement *comp_stmt = calloc(1, sizeof(CompoundStatement));
+    Node *comp_stmt = new_node(ND_COMPOUND, NULL, NULL);
     Vector *code = new_vector();
     Token *tok = get_token(pos);
     while (tok->ty != TK_EOF && tok->ty != '}') {
@@ -239,7 +239,7 @@ CompoundStatement *compound(void) {
 
     // Terminate with null for easier iteration.
     vec_push(code, NULL);
-    comp_stmt->code = code;
+    comp_stmt->stmts = code;
     return comp_stmt;
 }
 
@@ -250,6 +250,11 @@ Node *statement(void) {
     case ';':
         // Empty statement. Skip.
         break;
+    case '{':
+        // Compound statement.
+        node = compound();
+        return node;
+
     case TK_IF:
         ++pos;
         node = selection();

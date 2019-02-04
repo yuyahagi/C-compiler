@@ -77,13 +77,9 @@ enum {
 struct Node;
 
 typedef struct {
-    Vector *code;
-} CompoundStatement;
-
-typedef struct {
     char *name;
     Vector *args;
-    CompoundStatement *body;
+    struct Node *body;
 } FuncDef;
 
 typedef struct Node {
@@ -94,6 +90,9 @@ typedef struct Node {
     char *name;         // For identifiers.
     Vector *args;       // For function calls.
 
+    Vector *stmts;      // Compound statement.
+
+    // Selection statement.
     struct Node *cond;
     struct Node *then;
     struct Node *els;
@@ -110,7 +109,7 @@ FuncDef *new_funcdef(const Token *tok);
 // Function to parse an expression to abstract syntax trees.
 void program(void);
 FuncDef *funcdef(void);
-CompoundStatement *compound(void);
+Node *compound(void);
 Node *statement(void);
 Node *assign(void);
 Node *selection(void);
