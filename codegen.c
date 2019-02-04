@@ -128,7 +128,19 @@ void gen(Node *node, const Map *idents) {
         assert(stackpos == orig_stackpos);
 
         push("rax");
-        assert(true);
+        return;
+    }
+
+    case ND_COMPOUND:
+    {
+        for (int i = 0; i < node->stmts->len; i++) {
+            // The value of the entire expression is at the top of the stack.
+            // Pop it to keep the correct counting.
+            if (i > 0)
+                pop("rax");
+            Node *currentNode = (Node *)node->stmts->data[i];
+            gen(currentNode++, idents);
+        }
         return;
     }
 
@@ -215,7 +227,6 @@ void gen(Node *node, const Map *idents) {
 
 void gen_function(FuncDef *func) {
     stackpos = 0;
-    Vector *code = func->body->stmts;
     printf("%s:\n", func->name);
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
@@ -240,14 +251,8 @@ void gen_function(FuncDef *func) {
     }
 
     // Generate assembly from the ASTs.
-    Node **currentNode = (Node **)code->data;
-    while (*currentNode) {
-        gen(*currentNode++, idents);
-
-        // The value of the entire expression is at the top of the stack.
-        // Pop it to keep the correct counting.
-        printf("  pop rax\n");
-    }
+    gen(func->body, idents);
+    printf("  pop rax\n");
 
     // End of function. Return default int.
     // This will likely emit a redundant function epilogue after a return statement.

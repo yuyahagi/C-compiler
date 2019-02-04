@@ -197,8 +197,6 @@ void program(void) {
     while (get_token(pos)->ty != TK_EOF) {
         vec_push(funcdefs, (void *)funcdef());
     }
-    // Terminate with null for easier iteration.
-    vec_push(funcdefs, NULL);
 }
 
 FuncDef *funcdef(void) {
@@ -231,14 +229,14 @@ Node *compound(void) {
     Vector *code = new_vector();
     Token *tok = get_token(pos);
     while (tok->ty != TK_EOF && tok->ty != '}') {
-        vec_push(code, (void *)statement());
+        Node *stmt = statement();
+        if (stmt)
+            vec_push(code, (void *)stmt);
         tok = get_token(pos);
     }
     if (!consume('}'))
         error("A compound statement not terminated with '}'.", pos);
 
-    // Terminate with null for easier iteration.
-    vec_push(code, NULL);
     comp_stmt->stmts = code;
     return comp_stmt;
 }

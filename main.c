@@ -21,9 +21,9 @@ int main(int argc, char **argv) {
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");
 
-    FuncDef **func = (FuncDef **)funcdefs->data;
-    while (*func) {
-        gen_function(*func);
+    for (int i = 0; i < funcdefs->len; i++) {
+        FuncDef *func = (FuncDef *)funcdefs->data[i];
+        gen_function(func);
         ++func;
     }
     return 0;

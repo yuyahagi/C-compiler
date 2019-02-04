@@ -91,6 +91,19 @@ try 15 '
 add_upto(x) { if (x == 1) return x; else return x + add_upto(x-1); }
 main() { return add_upto(5); }'
 
-#try 2 'main() { x = 0; if (1) { x = 1; x = x * 2; } return x; }'
+try 2 'main() { x = 0; if (1) { x = 1; x = x * 2; } return x; }'
+
+try 2 '
+main() {
+    x = 0;
+    if (0) {
+        x = 1;
+        x = x * 2;
+    } else {
+        x = 0;
+        if (x) x = 1; else x = 2;
+    }
+    return x;
+}'
 
 echo OK
