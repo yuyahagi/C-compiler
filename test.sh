@@ -106,4 +106,13 @@ main() {
     return x;
 }'
 
+try 1 '
+foo(x) {
+    if (x == 2) return 1;
+    if (x == 1) return 1;
+    return foo(x-1);
+}
+main() { return  foo(3); }
+'
+
 echo OK
