@@ -139,7 +139,7 @@ void gen(Node *node, const Map *idents) {
             if (i > 0)
                 pop("rax");
             Node *currentNode = (Node *)node->stmts->data[i];
-            gen(currentNode++, idents);
+            gen(currentNode, idents);
         }
         return;
     }
@@ -162,6 +162,13 @@ void gen(Node *node, const Map *idents) {
             gen(node->els, idents);
         }
         printf(".L%d:\n", lbl_last);
+
+        // For now, every statement is assumed to push a result so push a dummy
+        // value here, even though selection statement does not have a value per
+        // se. This will be popped when the next statement is generated.
+        // See ND_COMPOUND case.
+        push_imm32(0);
+
         return;
     }
 
@@ -228,7 +235,7 @@ void gen(Node *node, const Map *idents) {
 void gen_function(FuncDef *func) {
     stackpos = 0;
     printf("%s:\n", func->name);
-    printf("  push rbp\n");
+    push("rbp");
     printf("  mov rbp, rsp\n");
 
     // Count number of used identifiers (including function parameters) and
@@ -246,13 +253,12 @@ void gen_function(FuncDef *func) {
     for (int i = 0; i < nregargs; i++) {
         char *param_name = ((Node *)func->args->data[i])->name;
         int offset = (int)map_get(idents, param_name);
-        push(regs[i]);
         printf("  mov [rbp%+d], %s\n", offset, regs[i]);
     }
 
     // Generate assembly from the ASTs.
     gen(func->body, idents);
-    printf("  pop rax\n");
+    pop("rax");
 
     // End of function. Return default int.
     // This will likely emit a redundant function epilogue after a return statement.

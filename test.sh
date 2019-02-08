@@ -115,4 +115,13 @@ foo(x) {
 main() { return  foo(3); }
 '
 
+try 13 '
+fib(x) {
+    if (x == 2) return 1;
+    if (x == 1) return 1;
+
+    return fib(x-1) + fib(x-2);
+}
+main() { return fib(7); }'
+
 echo OK
