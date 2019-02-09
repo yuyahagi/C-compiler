@@ -73,20 +73,17 @@ void gen_lval(Node *node, const Map *idents) {
 
     int offset = (int)map_get(idents, node->name);
     printf("  lea rax, [rbp%+d]\n", offset);
-    push("rax");
 }
 
 void gen(Node *node, const Map *idents) {
     switch (node->ty) {
     case ND_NUM:
-        push_imm32(node->val);
+        printf("  mov rax, %d\n", node->val);
         return;
 
     case ND_IDENT:
         gen_lval(node, idents);
-        pop("rax");
         printf("  mov rax, [rax]\n");
-        push("rax");
         return;
 
     case ND_CALL:
@@ -105,8 +102,10 @@ void gen(Node *node, const Map *idents) {
         }
 
         // Evaluate argument expressions.
-        for (int i = nargs - 1; i >= 0; i--)
+        for (int i = nargs - 1; i >= 0; i--) {
             gen(node->args->data[i], idents);
+            push("rax");
+        }
 
         // Assign first 6 args to registers. Leave the rest on the stack.
         for (int i = 0; i < nregargs; i++)
@@ -127,7 +126,6 @@ void gen(Node *node, const Map *idents) {
         }
         assert(stackpos == orig_stackpos);
 
-        push("rax");
         return;
     }
 
@@ -136,8 +134,6 @@ void gen(Node *node, const Map *idents) {
         for (int i = 0; i < node->stmts->len; i++) {
             // The value of the entire expression is at the top of the stack.
             // Pop it to keep the correct counting.
-            if (i > 0)
-                pop("rax");
             Node *currentNode = (Node *)node->stmts->data[i];
             gen(currentNode, idents);
         }
@@ -150,7 +146,6 @@ void gen(Node *node, const Map *idents) {
         int lbl_last = nlabel++;
 
         gen(node->cond, idents);
-        pop("rax");
         printf("  cmp rax, 0\n");
         printf("  je .L%d\n", lbl_else);
 
@@ -163,19 +158,12 @@ void gen(Node *node, const Map *idents) {
         }
         printf(".L%d:\n", lbl_last);
 
-        // For now, every statement is assumed to push a result so push a dummy
-        // value here, even though selection statement does not have a value per
-        // se. This will be popped when the next statement is generated.
-        // See ND_COMPOUND case.
-        push_imm32(0);
-
         return;
     }
 
     case ND_RETURN:
         if (node->rhs) {
             gen(node->rhs, idents);
-            printf("  pop rax\n");
         }
         printf("  mov rsp, rbp\n");
         printf("  pop rbp\n");
@@ -184,17 +172,18 @@ void gen(Node *node, const Map *idents) {
 
     case '=':
         gen_lval(node->lhs, idents);
+        push("rax");
         gen(node->rhs, idents);
 
         pop("rdi");
-        pop("rax");
-        printf("  mov [rax], rdi\n");
-        push("rdi");
+        printf("  mov [rdi], rax\n");
         return;
     }
 
     gen(node->lhs, idents);
+    push("rax");
     gen(node->rhs, idents);
+    push("rax");
 
     pop("rdi");
     pop("rax");
@@ -228,8 +217,6 @@ void gen(Node *node, const Map *idents) {
                 node->ty);
         exit(1);
     }
-
-    push("rax");
 }
 
 void gen_function(FuncDef *func) {
@@ -258,7 +245,6 @@ void gen_function(FuncDef *func) {
 
     // Generate assembly from the ASTs.
     gen(func->body, idents);
-    pop("rax");
 
     // End of function. Return default int.
     // This will likely emit a redundant function epilogue after a return statement.
