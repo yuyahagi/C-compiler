@@ -142,7 +142,23 @@ fib(x) {
 main() { return fib(7); }'
 
 try 1 'main() { x = 1; while (0) x = 0; return x; }'
-try 5 'main() { i = 0; while (i != 5) i = i + 1; return i; }'
-try 10 'main() { i = 0; sum = 0; while (i != 5) { sum = sum + i; i = i + 1; } return sum; }'
+try 5 'main() { i = 0; while (i < 5) i = i + 1; return i; }'
+try 10 'main() { i = 0; sum = 0; while (i < 5) { sum = sum + i; i = i + 1; } return sum; }'
+
+try 10 'main() { sum = 0; for (i = 0; i < 5; i = i + 1) sum = sum + i; return sum; }'
+try 10 'main() { sum = 0; for (i = 4; i >= 0; i = i - 1) sum = sum + i; return sum; }'
+try 5 'main() { i = 0; for ( ; i < 5; i = i + 1) {} return i; }'
+try 5 'main() { i = 5; for ( ; i < 5; i = i + 1) {} return i; }'
+try 5 'main() { i = 0; for ( ; i < 5; ) i = i + 1; return i; }'
+try 34 '
+main() {
+    sum = 0;
+    prod = 1;
+    for (i = 1; i < 5; i = i + 1) {
+        sum = sum + i;
+        prod = prod * i;
+    }
+    return sum + prod;
+}'
 
 echo OK

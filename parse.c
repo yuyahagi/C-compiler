@@ -103,6 +103,10 @@ void tokenize(char *p) {
                 push_token(TK_WHILE, p0, 0, len);
                 continue;
             }
+            if  (strncmp(p0, "for", max(len, 3)) == 0) {
+                push_token(TK_FOR, p0, 0, len);
+                continue;
+            }
             push_token(TK_IDENT, p0, 0, len);
             continue;
         }
@@ -202,6 +206,7 @@ void error(const char *msg, size_t i) {
 // assign': '' | "=" assign'
 // selection: "if" "(" assign ")" statement | "if" "(" assign ")" statement "else" statement
 // iteration: "while" "(" assign ")" statement
+// iteration: "for" "(" assign ";" assign ";" assign ")" statement
 // equal: relational equal'
 // equal': '' | "==" equal | "!=" equal
 // relational: add relational'
@@ -278,7 +283,11 @@ Node *statement(void) {
         return node;
     case TK_WHILE:
         ++pos;
-        node = iteration();
+        node = iteration_while();
+        return node;
+    case TK_FOR:
+        ++pos;
+        node = iteration_for();
         return node;
 
     case TK_RETURN:
@@ -318,10 +327,26 @@ Node *selection(void) {
     return node;
 }
 
-Node *iteration(void) {
+Node *iteration_while(void) {
     Node *node = new_node(ND_WHILE, NULL, NULL);
     expect('(');
     node->cond = assign();
+    expect(')');
+    node->then = statement();
+    return node;
+}
+
+Node *iteration_for(void) {
+    Node *node = new_node(ND_FOR, NULL, NULL);
+    expect('(');
+    if (get_token(pos)->ty != ';')
+        node->init = assign();
+    expect(';');
+    if (get_token(pos)->ty != ';')
+        node->cond = assign();
+    expect(';');
+    if (get_token(pos)->ty != ')')
+        node->step = assign();
     expect(')');
     node->then = statement();
     return node;

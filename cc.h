@@ -42,6 +42,7 @@ enum {
     TK_IF,
     TK_ELSE,
     TK_WHILE,
+    TK_FOR,
     TK_RETURN,
     TK_EOF,         // Represents end of input.
 };
@@ -75,6 +76,7 @@ enum {
     ND_NOTEQUAL,
     ND_IF,
     ND_WHILE,
+    ND_FOR,
     ND_RETURN,
     ND_CALL,
     ND_COMPOUND,    // Compound statement.
@@ -103,6 +105,10 @@ typedef struct Node {
     struct Node *cond;
     struct Node *then;
     struct Node *els;
+
+    // For statement. Use then for the iteration body.
+    struct Node *init;
+    struct Node *step;
 } Node;
 
 // A buffer to store parsed functions.
@@ -120,7 +126,8 @@ Node *compound(void);
 Node *statement(void);
 Node *assign(void);
 Node *selection(void);
-Node *iteration(void);
+Node *iteration_while(void);
+Node *iteration_for(void);
 Node *equal(void);
 Node *relational(void);
 Node *add(void);
