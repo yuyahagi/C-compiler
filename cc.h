@@ -118,6 +118,7 @@ Node *assign(void);
 Node *selection(void);
 Node *iteration(void);
 Node *equal(void);
+Node *relational(void);
 Node *add(void);
 Node *mul(void);
 Node *postfix(void);

@@ -130,7 +130,9 @@ void tokenize(char *p) {
         case '-':
         case '/':
         case ';':
+        case '<':
         case '=':
+        case '>':
         case '{':
         case '}':
             push_token(*p, p, 0, 1);
@@ -188,8 +190,11 @@ void error(const char *msg, size_t i) {
 // assign: equal assign'
 // assign': '' | "=" assign'
 // selection: "if" "(" assign ")" statement | "if" "(" assign ")" statement "else" statement
-// equal: add equal'
+// iteration: "while" "(" assign ")" statement
+// equal: relational equal'
 // equal': '' | "==" equal | "!=" equal
+// relational: add relational'
+// relational': '' | "<" relational | ">" relational
 // add: mul add'
 // add': '' | "+" add' | "-" add'
 // mul: postfix | postfix "*" mul | postfix "/" mul
@@ -312,15 +317,20 @@ Node *iteration(void) {
 }
 
 Node *equal(void) {
-    Node *lhs = add();
-    if (get_token(pos)->ty == TK_EQUAL) {
-        ++pos;
+    Node *lhs = relational();
+    if (consume(TK_EQUAL))
         return new_node(TK_EQUAL, lhs, equal());
-    }
-    if (get_token(pos)->ty == TK_NOTEQUAL) {
-        ++pos;
+    if (consume(TK_NOTEQUAL))
         return new_node(TK_NOTEQUAL, lhs, equal());
-    }
+    return lhs;
+}
+
+Node *relational(void) {
+    Node *lhs = add();
+    if (consume('<'))
+        return new_node('<', lhs, relational());
+    if (consume('>'))
+        return new_node('>', lhs, relational());
     return lhs;
 }
 

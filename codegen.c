@@ -219,6 +219,16 @@ void gen(Node *node, const Map *idents) {
         printf("  xor rdx, rdx\n");
         printf("  div rdi\n");
         break;
+    case '<':
+        printf("  cmp rax, rdi\n");
+        printf("  setl al\n");
+        printf("  movzb rax, al\n");
+        break;
+    case '>':
+        printf("  cmp rax, rdi\n");
+        printf("  setg al\n");
+        printf("  movzb rax, al\n");
+        break;
     case ND_EQUAL:
         printf("  cmp rax, rdi\n");
         printf("  sete al\n");
