@@ -100,6 +100,10 @@ void tokenize(char *p) {
                 push_token(TK_ELSE, p0, 0, len);
                 continue;
             }
+            if (strncmp(p0, "while", max(len, 5)) == 0) {
+                push_token(TK_WHILE, p0, 0, len);
+                continue;
+            }
             push_token(TK_IDENT, p0, 0, len);
             continue;
         }
@@ -180,7 +184,7 @@ void error(const char *msg, size_t i) {
 // program: {funcdef}*
 // funcdef: ident "(" parameter-list ")" compound
 // compound: "{" {statement}* "}"
-// statement: assign ";" | selection | "return" ";" | "return" assign ";"
+// statement: assign ";" | selection | iteration | "return" ";" | "return" assign ";"
 // assign: equal assign'
 // assign': '' | "=" assign'
 // selection: "if" "(" assign ")" statement | "if" "(" assign ")" statement "else" statement
@@ -252,11 +256,15 @@ Node *statement(void) {
         // Compound statement.
         node = compound();
         return node;
-
     case TK_IF:
         ++pos;
         node = selection();
         return node;
+    case TK_WHILE:
+        ++pos;
+        node = iteration();
+        return node;
+
     case TK_RETURN:
         ++pos;
         Node *rhs = NULL;
@@ -291,6 +299,15 @@ Node *selection(void) {
     if (consume(TK_ELSE))
         node->els = statement();
 
+    return node;
+}
+
+Node *iteration(void) {
+    Node *node = new_node(ND_WHILE, NULL, NULL);
+    expect('(');
+    node->cond = assign();
+    expect(')');
+    node->then = statement();
     return node;
 }
 

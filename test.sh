@@ -46,6 +46,7 @@ try 5 'main() { return 1+60/12-1; }'
 try 20 'main() { return (2+3)*4; }'
 try 7 'main() { 1; 2; return 3+4; }'
 try 3 'main() { a=1; return a+2; }'
+try 3 'main() { x = 1; x = x + 2; return x; }'
 try 4 'main() { _long_variable_1_ = 2; return _long_variable_1_ * 2; }'
 try 5 'main() { foo=1; bar=baz=foo+1; return foo+bar*baz; }'
 try 0 'main() { return 2 == 2+1; }'
@@ -123,5 +124,9 @@ fib(x) {
     return fib(x-1) + fib(x-2);
 }
 main() { return fib(7); }'
+
+try 1 'main() { x = 1; while (0) x = 0; return x; }'
+try 5 'main() { i = 0; while (i != 5) i = i + 1; return i; }'
+try 10 'main() { i = 0; sum = 0; while (i != 5) { sum = sum + i; i = i + 1; } return sum; }'
 
 echo OK

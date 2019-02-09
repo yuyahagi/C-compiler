@@ -39,6 +39,7 @@ enum {
     TK_NOTEQUAL,    // Nonequality operator "!=".
     TK_IF,
     TK_ELSE,
+    TK_WHILE,
     TK_RETURN,
     TK_EOF,         // Represents end of input.
 };
@@ -69,6 +70,7 @@ enum {
     ND_EQUAL,
     ND_NOTEQUAL,
     ND_IF,
+    ND_WHILE,
     ND_RETURN,
     ND_CALL,
     ND_COMPOUND,    // Compound statement.
@@ -93,6 +95,7 @@ typedef struct Node {
     Vector *stmts;      // Compound statement.
 
     // Selection statement.
+    // cond is also used by iteration statements.
     struct Node *cond;
     struct Node *then;
     struct Node *els;
@@ -113,6 +116,7 @@ Node *compound(void);
 Node *statement(void);
 Node *assign(void);
 Node *selection(void);
+Node *iteration(void);
 Node *equal(void);
 Node *add(void);
 Node *mul(void);

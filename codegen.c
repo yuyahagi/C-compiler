@@ -157,7 +157,24 @@ void gen(Node *node, const Map *idents) {
             gen(node->els, idents);
         }
         printf(".L%d:\n", lbl_last);
+        return;
+    }
 
+    case ND_WHILE:
+    {
+        int lbl_beg = nlabel++;
+        int lbl_end = nlabel++;
+
+        printf(".L%d:\n", lbl_beg);
+        // Condition check.
+        gen(node->cond, idents);
+        printf("  cmp rax, 0\n");
+        printf("  je .L%d\n", lbl_end);
+
+        gen(node->then, idents);
+
+        printf("  jmp .L%d\n", lbl_beg);
+        printf(".L%d:\n", lbl_end);
         return;
     }
 
