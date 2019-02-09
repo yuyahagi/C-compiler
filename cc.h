@@ -35,6 +35,8 @@ int max(int x0, int x1);
 enum {
     TK_NUM = 256,   // Represents a number.
     TK_IDENT,       // Represents an identifier.
+    TK_LESSEQUAL,   // "<=".
+    TK_GREATEREQUAL,// ">=".
     TK_EQUAL,       // Equality operator "==".
     TK_NOTEQUAL,    // Nonequality operator "!=".
     TK_IF,
@@ -67,6 +69,8 @@ void tokenize(char *p);
 enum {
     ND_NUM = 256,
     ND_IDENT,
+    ND_LESSEQUAL,
+    ND_GREATEREQUAL,
     ND_EQUAL,
     ND_NOTEQUAL,
     ND_IF,

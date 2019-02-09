@@ -229,6 +229,16 @@ void gen(Node *node, const Map *idents) {
         printf("  setg al\n");
         printf("  movzb rax, al\n");
         break;
+    case ND_LESSEQUAL:
+        printf("  cmp rax, rdi\n");
+        printf("  setle al\n");
+        printf("  movzb rax, al\n");
+        break;
+    case ND_GREATEREQUAL:
+        printf("  cmp rax, rdi\n");
+        printf("  setge al\n");
+        printf("  movzb rax, al\n");
+        break;
     case ND_EQUAL:
         printf("  cmp rax, rdi\n");
         printf("  sete al\n");

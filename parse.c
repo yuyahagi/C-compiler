@@ -80,7 +80,6 @@ void tokenize(char *p) {
         }
 
         // Identifiers or keywords.
-        // Only suport single-letter lower-case aphabet for now.
         if (isalpha(*p) || *p == '_') {
             char *p0 = p;
             do
@@ -116,6 +115,18 @@ void tokenize(char *p) {
         }
         if (*p == '!' && *(p+1) == '=') {
             push_token(TK_NOTEQUAL, p, 0, 2);
+            p += 2;
+            continue;
+        }
+        
+        // Two-letter relational operators (<= and >=).
+        if (*p == '<' && *(p+1) == '=') {
+            push_token(TK_LESSEQUAL, p, 0, 2);
+            p += 2;
+            continue;
+        }
+        if (*p == '>' && *(p+1) == '=') {
+            push_token(TK_GREATEREQUAL, p, 0, 2);
             p += 2;
             continue;
         }
@@ -194,7 +205,7 @@ void error(const char *msg, size_t i) {
 // equal: relational equal'
 // equal': '' | "==" equal | "!=" equal
 // relational: add relational'
-// relational': '' | "<" relational | ">" relational
+// relational': '' | "<" relational | ">" relational | "<=" relational | ">=" relational
 // add: mul add'
 // add': '' | "+" add' | "-" add'
 // mul: postfix | postfix "*" mul | postfix "/" mul
@@ -331,6 +342,10 @@ Node *relational(void) {
         return new_node('<', lhs, relational());
     if (consume('>'))
         return new_node('>', lhs, relational());
+    if (consume(TK_LESSEQUAL))
+        return new_node(ND_LESSEQUAL, lhs, relational());
+    if (consume(TK_GREATEREQUAL))
+        return new_node(ND_GREATEREQUAL, lhs, relational());
     return lhs;
 }
 
