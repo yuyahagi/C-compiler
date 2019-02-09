@@ -215,7 +215,7 @@ void error(const char *msg, size_t i) {
 // add': '' | "+" add' | "-" add'
 // mul: postfix | postfix "*" mul | postfix "/" mul
 // postfix: term | term "(" ")"
-// term: num | "(" add ")"
+// term: num | "(" assign ")"
 void program(void) {
     funcdefs = new_vector();
     pos = 0;
@@ -435,7 +435,7 @@ Node *term(void) {
 
     if (!consume('('))
         error("A token neither a number nor an opening parenthesis.", pos);
-    Node *node = add();
+    Node *node = assign();
     if (!consume(')'))
         error("A closing parenthesis was expected but not found.", pos);
     return node;
