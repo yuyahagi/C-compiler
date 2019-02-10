@@ -271,7 +271,8 @@ Node *statement(void) {
     Node *node = NULL;
     switch(tok->ty) {
     case ';':
-        // Empty statement. Skip.
+        // Empty statement.
+        node = new_node(ND_BLANK, NULL, NULL);
         break;
     case '{':
         // Compound statement.
@@ -341,12 +342,18 @@ Node *iteration_for(void) {
     expect('(');
     if (get_token(pos)->ty != ';')
         node->init = assign();
+    else
+        node->init = new_node(ND_BLANK, NULL, NULL);
     expect(';');
     if (get_token(pos)->ty != ';')
         node->cond = assign();
+    else
+        node->cond = new_node(ND_BLANK, NULL, NULL);
     expect(';');
     if (get_token(pos)->ty != ')')
         node->step = assign();
+    else
+        node->step = new_node(ND_BLANK, NULL, NULL);
     expect(')');
     node->then = statement();
     return node;

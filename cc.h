@@ -69,6 +69,7 @@ void tokenize(char *p);
 // Tokens defined as a single letter is expressed with its ASCII code.
 enum {
     ND_NUM = 256,
+    ND_BLANK,       // Blank statement.
     ND_IDENT,
     ND_LESSEQUAL,
     ND_GREATEREQUAL,
