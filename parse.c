@@ -355,9 +355,9 @@ Node *iteration_for(void) {
 Node *equal(void) {
     Node *lhs = relational();
     if (consume(TK_EQUAL))
-        return new_node(TK_EQUAL, lhs, equal());
+        return new_node(ND_EQUAL, lhs, equal());
     if (consume(TK_NOTEQUAL))
-        return new_node(TK_NOTEQUAL, lhs, equal());
+        return new_node(ND_NOTEQUAL, lhs, equal());
     return lhs;
 }
 
