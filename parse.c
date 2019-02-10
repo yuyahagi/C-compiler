@@ -239,7 +239,16 @@ void program(void) {
     }
 }
 
+static Node *parse_func_param() {
+    if (!consume(TK_TYPE_INT))
+        error("Missing type specifier for a function parameter.\n", pos);
+    return new_node_ident(get_token(pos++));
+}
+
 FuncDef *funcdef(void) {
+    if (!consume(TK_TYPE_INT))
+        error("Missing return type of a function definition.\n", pos);
+
     Token *tok = get_token(pos);
     if (tok->ty != TK_IDENT)
         error("A function definition expected but not found.\n", pos);
@@ -251,9 +260,10 @@ FuncDef *funcdef(void) {
     if (!consume('('))
         error("'(' expected but not found.\n", pos);
     if (!consume(')')) {
-        vec_push(func->args, new_node_ident(get_token(pos++)));
-        while (consume(','))
-            vec_push(func->args, new_node_ident(get_token(pos++)));
+        vec_push(func->args, parse_func_param());
+        while (consume(',')) {
+            vec_push(func->args, parse_func_param());
+        }
         expect(')');
     }
 
