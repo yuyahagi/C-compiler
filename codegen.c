@@ -9,24 +9,20 @@ static int nlabel = 0;
 // =============================================================================
 // Count identifiers in an AST.
 // =============================================================================
-static void idents_in_statement(const Node *node, Map *idents) {
+
+static void decls_to_offsets(const Vector *code, Map *idents) {
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
-    if (node->ty == '=' && node->lhs && node->lhs->ty == ND_IDENT) {
-        map_put(idents, node->lhs->name, (void *)(-8 * (idents->keys->len+1)));
-    }
-    if (node->lhs) idents_in_statement(node->lhs, idents);
-    if (node->rhs) idents_in_statement(node->rhs, idents);
-}
-
-void idents_in_code(const Vector *code, Map *idents) {
-    Node **current = (Node **)code->data;
-    while (*current) {
-        idents_in_statement(*current, idents);
-        ++current;
+    // Search for declarations and assign offsets.
+    for (int i = 0; i < code->len; i++) {
+        Node *node = (Node *)code->data[i];
+        if (node->ty != ND_DECLARATION)
+            continue;
+        map_put(idents, node->name, (void *)(-8 * (idents->keys->len+1)));
     }
 }
 
-void idents_in_func(const FuncDef *func, Map *idents) {
+// Count identifiers in a compound statement and assign offset.
+static void idents_in_func(const FuncDef *func, Map *idents) {
     // First 6 function parameters are to be copied to the stack.
     int nargs = func->args->len;
     int nregargs = nargs <= 6 ? nargs : 6;
@@ -39,7 +35,7 @@ void idents_in_func(const FuncDef *func, Map *idents) {
         map_put(idents, ((Node *)func->args->data[i+6])->name, (void *)(8 * (i + 1)));
     }
     // Count identifiers in the function body and assign offsets.
-    idents_in_code(func->body->stmts, idents);
+    decls_to_offsets(func->body->stmts, idents);
 }
 
 // Track stack position for adjusting alignment.
@@ -72,12 +68,19 @@ void gen_lval(Node *node, const Map *idents) {
     }
 
     int offset = (int)map_get(idents, node->name);
+    if (offset == 0) {
+        fprintf(stderr, "An unknown identifier %s.\n", node->name);
+        exit(1);
+    }
     printf("  lea rax, [rbp%+d]\n", offset);
 }
 
 void gen(Node *node, const Map *idents) {
     switch (node->ty) {
     case ND_BLANK:
+        return;
+
+    case ND_DECLARATION:
         return;
 
     case ND_NUM:

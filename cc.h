@@ -34,6 +34,7 @@ int max(int x0, int x1);
 // Tokens defined as a single letter is directly expressed as its ASCII code.
 enum {
     TK_NUM = 256,   // Represents a number.
+    TK_TYPE_INT,    // Type specifier, int
     TK_IDENT,       // Represents an identifier.
     TK_LESSEQUAL,   // "<=".
     TK_GREATEREQUAL,// ">=".
@@ -68,8 +69,9 @@ void tokenize(char *p);
 // Node types.
 // Tokens defined as a single letter is expressed with its ASCII code.
 enum {
-    ND_NUM = 256,
-    ND_BLANK,       // Blank statement.
+    ND_BLANK = 256, // Blank statement.
+    ND_DECLARATION,
+    ND_NUM,
     ND_IDENT,
     ND_LESSEQUAL,
     ND_GREATEREQUAL,
@@ -123,6 +125,7 @@ FuncDef *new_funcdef(const Token *tok);
 // Function to parse an expression to abstract syntax trees.
 void program(void);
 FuncDef *funcdef(void);
+Node *declaration(void);
 Node *compound(void);
 Node *statement(void);
 Node *assign(void);
@@ -140,11 +143,6 @@ Node *term(void);
 // =============================================================================
 // Assembly generation.
 // =============================================================================
-// Count identifiers in a compound statement and assign offset.
-void idents_in_code(const Vector *code, Map *idents);
-void idents_in_func(const FuncDef *func, Map *idents);
-
-// Assembly generation.
 void gen(Node *node, const Map *idents);
 void gen_lval(Node *node, const Map *idents);
 void gen_function(FuncDef *func);

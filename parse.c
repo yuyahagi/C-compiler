@@ -27,6 +27,17 @@ Node *new_node_num(int val) {
     return node;
 }
 
+Node *new_node_declaration(const Token *tok) {
+    Node *node = calloc(1, sizeof(Node));
+    node->ty = ND_DECLARATION;
+    // Copy identifier name.
+    size_t len = tok->len;
+    node->name = malloc(len + 1);
+    strncpy(node->name, tok->input, len);
+    node->name[len] = '\0';
+    return node;
+}
+
 Node *new_node_ident(const Token *tok) {
     Node *node = calloc(1, sizeof(Node));
     node->ty = ND_IDENT;
@@ -87,6 +98,10 @@ void tokenize(char *p) {
             while (isalpha(*p) || isdigit(*p) || *p == '_');
 
             int len = p - p0;
+            if (strncmp(p0, "int", max(len, 3)) == 0) {
+                push_token(TK_TYPE_INT, p0, 0, len);
+                continue;
+            }
             if (strncmp(p0, "return", max(len, 6)) == 0) {
                 push_token(TK_RETURN, p0, 0, len);
                 continue;
@@ -246,6 +261,17 @@ FuncDef *funcdef(void) {
     return func;
 }
 
+Node *declaration(void) {
+    expect(TK_TYPE_INT);
+    if (get_token(pos)->ty != TK_IDENT)
+        error("An identifier is expected but not found.\n", pos);
+    Node *ident = new_node_declaration(get_token(pos++));
+    if (!consume(';'))
+        error("A declaration not ending with ';'.\n", pos);
+
+    return ident;
+}
+
 Node *compound(void) {
     if (!consume('{'))
         error("'{' expected but not found.\n", pos);
@@ -254,9 +280,12 @@ Node *compound(void) {
     Vector *code = new_vector();
     Token *tok = get_token(pos);
     while (tok->ty != TK_EOF && tok->ty != '}') {
-        Node *stmt = statement();
-        if (stmt)
-            vec_push(code, (void *)stmt);
+        Node *decl_or_stmt = NULL;
+        if (tok->ty == TK_TYPE_INT)
+            decl_or_stmt = declaration();
+        else
+            decl_or_stmt = statement();
+        vec_push(code, (void *)decl_or_stmt);
         tok = get_token(pos);
     }
     if (!consume('}'))
