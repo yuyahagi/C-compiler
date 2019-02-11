@@ -87,6 +87,16 @@ enum {
 
 struct Node;
 
+typedef struct Type {
+    enum { INT, PTR } ty;
+    struct Type *ptr_of;
+} Type;
+
+typedef struct {
+    Type *type;
+    int offset;
+} Ident;
+
 typedef struct {
     char *name;
     Vector *args;
@@ -98,7 +108,8 @@ typedef struct Node {
     struct Node *lhs;
     struct Node *rhs;
     int val;            // Value of ND_NUM node.
-    char *name;         // For identifiers.
+    Type *type;         // For declarations and identifiers.
+    char *name;         // For declarations and identifiers.
     Vector *args;       // For function calls.
 
     Vector *stmts;      // Compound statement.

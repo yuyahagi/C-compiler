@@ -27,7 +27,7 @@ Node *new_node_num(int val) {
     return node;
 }
 
-Node *new_node_declaration(const Token *tok) {
+Node *new_node_declaration(const Token *tok, Type *type) {
     Node *node = calloc(1, sizeof(Node));
     node->ty = ND_DECLARATION;
     // Copy identifier name.
@@ -35,6 +35,8 @@ Node *new_node_declaration(const Token *tok) {
     node->name = malloc(len + 1);
     strncpy(node->name, tok->input, len);
     node->name[len] = '\0';
+    // Set type.
+    node->type = type;
     return node;
 }
 
@@ -207,7 +209,7 @@ static void expect(int ty) {
 }
 
 // A function to report parsing errors.
-void error(const char *msg, size_t i) {
+static void error(const char *msg, size_t i) {
     fprintf(stderr, "%s \"%s\"\n", msg, get_token(i)->input);
     exit(1);
 }
@@ -215,7 +217,8 @@ void error(const char *msg, size_t i) {
 // Parse an expression to an abstract syntax tree.
 // program: {funcdef}*
 // funcdef: ident "(" parameter-list ")" compound
-// compound: "{" {statement}* "}"
+// compound: "{" {declaration}* {statement}* "}"
+// declaration: "int" {"*"}* identifier
 // statement: assign ";" | selection | iteration | "return" ";" | "return" assign ";"
 // assign: equal assign'
 // assign': '' | "=" assign'
@@ -271,22 +274,38 @@ FuncDef *funcdef(void) {
     return func;
 }
 
+static Type *read_type(Type *inner) {
+    if (!inner) {
+        expect(TK_TYPE_INT);
+        inner = calloc(1, sizeof(Type));
+        inner->ty = INT;
+        inner->ptr_of = NULL;
+    }
+
+    // If '*' follows, make a pointer of a type that has been parsed so far.
+    if (get_token(pos)->ty == '*') {
+        ++pos;
+        Type *inner_ = inner;
+        inner = calloc(1, sizeof(Type));
+        inner->ty = PTR;
+        inner->ptr_of = inner_;
+        return read_type(inner);
+    }
+    return inner;
+}
+
 Node *declaration(void) {
-    expect(TK_TYPE_INT);
+    Type *type = read_type(NULL);
     if (get_token(pos)->ty != TK_IDENT)
         error("An identifier is expected but not found.\n", pos);
-    Node *ident = new_node_declaration(get_token(pos++));
-    if (!consume(';'))
-        error("A declaration not ending with ';'.\n", pos);
-
-    return ident;
+    Node *node = new_node_declaration(get_token(pos++), type);
+    return node;
 }
 
 Node *compound(void) {
     if (!consume('{'))
         error("'{' expected but not found.\n", pos);
     
-    Node *comp_stmt = new_node(ND_COMPOUND, NULL, NULL);
     Vector *code = new_vector();
     Token *tok = get_token(pos);
     while (tok->ty != TK_EOF && tok->ty != '}') {
@@ -301,6 +320,7 @@ Node *compound(void) {
     if (!consume('}'))
         error("A compound statement not terminated with '}'.", pos);
 
+    Node *comp_stmt = new_node(ND_COMPOUND, NULL, NULL);
     comp_stmt->stmts = code;
     return comp_stmt;
 }

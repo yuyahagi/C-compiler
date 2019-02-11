@@ -9,6 +9,19 @@ static int nlabel = 0;
 // =============================================================================
 // Count identifiers in an AST.
 // =============================================================================
+static Type *make_type(int type_enum, Type *ptr_of) {
+    Type *t = calloc(1, sizeof(Type));
+    t->ty = type_enum;
+    t->ptr_of = ptr_of;
+    return t;
+}
+
+static void put_ident(Map *idents, char *name, Type *type, int offset) {
+    Ident *ident = malloc(sizeof(Ident));
+    ident->type = type;
+    ident->offset = offset;
+    map_put(idents, name, (void *)(ident));
+}
 
 static void decls_to_offsets(const Vector *code, Map *idents) {
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
@@ -17,7 +30,8 @@ static void decls_to_offsets(const Vector *code, Map *idents) {
         Node *node = (Node *)code->data[i];
         if (node->ty != ND_DECLARATION)
             continue;
-        map_put(idents, node->name, (void *)(-8 * (idents->keys->len+1)));
+
+        put_ident(idents, node->name, node->type, -8 * (idents->keys->len+1));
     }
 }
 
@@ -28,11 +42,19 @@ static void idents_in_func(const FuncDef *func, Map *idents) {
     int nregargs = nargs <= 6 ? nargs : 6;
     int nstackargs = nargs - nregargs;
     for (int i = 0; i < nregargs; i++) {
-        map_put(idents, ((Node *)func->args->data[i])->name, (void *)(-8 * (idents->keys->len+1)));
+        put_ident(
+            idents,
+            ((Node *)func->args->data[i])->name,
+            make_type(INT, NULL),
+            -8 * (idents->keys->len+1));
     }
     // The rest of args are in stack. Store positive offsets.
     for (int i = nstackargs - 1; i >= 0; i--) {
-        map_put(idents, ((Node *)func->args->data[i+6])->name, (void *)(8 * (i + 1)));
+        put_ident(
+            idents,
+            ((Node *)func->args->data[i+6])->name,
+            make_type(INT, NULL),
+            8 * (i + 1));
     }
     // Count identifiers in the function body and assign offsets.
     decls_to_offsets(func->body->stmts, idents);
@@ -62,17 +84,23 @@ static void pop(const char *reg) {
 
 void gen_lval(Node *node, const Map *idents) {
 #pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
-    if (node->ty != ND_IDENT) {
-        fprintf(stderr, "Not an identifier.\n");
-        exit(1);
-    }
+    assert(node->ty == ND_IDENT);
 
-    int offset = (int)map_get(idents, node->name);
+    Ident *ident = (Ident *)map_get(idents, node->name);
+    int offset = ident->offset;
     if (offset == 0) {
         fprintf(stderr, "An unknown identifier %s.\n", node->name);
         exit(1);
     }
-    printf("  lea rax, [rbp%+d]\n", offset);
+    if (ident->type->ty == INT) {
+        assert(ident->type->ptr_of == NULL);
+        printf("  lea rax, [rbp%+d]\n", offset);
+    } else {
+        // Pointer.
+        fprintf(stderr, "Not implemented yet.\n");
+        exit(1);
+    }
+    return;
 }
 
 void gen(Node *node, const Map *idents) {
@@ -302,8 +330,8 @@ void gen_function(FuncDef *func) {
     int nregargs = nargs <= 6 ? nargs : 6;
     for (int i = 0; i < nregargs; i++) {
         char *param_name = ((Node *)func->args->data[i])->name;
-        int offset = (int)map_get(idents, param_name);
-        printf("  mov [rbp%+d], %s\n", offset, regs[i]);
+        Ident *ident = (Ident *)map_get(idents, param_name);
+        printf("  mov [rbp%+d], %s\n", ident->offset, regs[i]);
     }
 
     // Generate assembly from the ASTs.
