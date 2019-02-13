@@ -84,23 +84,29 @@ static void pop(const char *reg) {
 
 void gen_lval(Node *node, const Map *idents) {
 #pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
-    assert(node->ty == ND_IDENT);
-
-    Ident *ident = (Ident *)map_get(idents, node->name);
-    int offset = ident->offset;
-    if (offset == 0) {
-        fprintf(stderr, "An unknown identifier %s.\n", node->name);
-        exit(1);
-    }
-    if (ident->type->ty == INT) {
-        assert(ident->type->ptr_of == NULL);
+    switch (node->ty) {
+    case ND_IDENT:
+    {
+        Ident *ident = (Ident *)map_get(idents, node->name);
+        int offset = ident->offset;
+        if (offset == 0) {
+            fprintf(stderr, "An unknown identifier %s.\n", node->name);
+            exit(1);
+        }
         printf("  lea rax, [rbp%+d]\n", offset);
-    } else {
-        // Pointer.
-        fprintf(stderr, "Not implemented yet.\n");
+        return;
+    }
+
+    case ND_UEXPR:
+        assert(node->uop == '*');
+        gen_lval(node->operand, idents);
+        printf("  mov rax, [rax]\n");
+        return;
+
+    default:
+        fprintf(stderr, "Attempted to generate an invalid node as an lvalue. %d.\n", node->ty);
         exit(1);
     }
-    return;
 }
 
 void gen(Node *node, const Map *idents) {
@@ -118,6 +124,21 @@ void gen(Node *node, const Map *idents) {
     case ND_IDENT:
         gen_lval(node, idents);
         printf("  mov rax, [rax]\n");
+        return;
+
+    case ND_UEXPR:
+        switch (node->uop) {
+        case '&':
+            gen_lval(node->operand, idents);
+            break;
+        case '*':
+            gen_lval(node, idents);
+            printf("  mov rax, [rax]\n");
+            break;
+        default:
+            fprintf(stderr, "Unknown unary operator %c.\n", node->uop);
+            exit(1);
+        }
         return;
 
     case ND_CALL:
@@ -251,6 +272,7 @@ void gen(Node *node, const Map *idents) {
         return;
     }
 
+    // Binary operators.
     gen(node->lhs, idents);
     push("rax");
     gen(node->rhs, idents);

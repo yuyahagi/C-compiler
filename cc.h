@@ -73,6 +73,7 @@ enum {
     ND_DECLARATION,
     ND_NUM,
     ND_IDENT,
+    ND_UEXPR,
     ND_LESSEQUAL,
     ND_GREATEREQUAL,
     ND_EQUAL,
@@ -114,6 +115,9 @@ typedef struct Node {
 
     Vector *stmts;      // Compound statement.
 
+    int uop;            // Unary operator.
+    struct Node *operand;
+
     // Selection statement.
     // cond is also used by iteration statements.
     struct Node *cond;
@@ -128,7 +132,8 @@ typedef struct Node {
 // A buffer to store parsed functions.
 extern Vector *funcdefs;
 
-Node *new_node(int ty, Node *lhs, Node *rhs);
+Node *new_node_uop(int ty, Node *operand);
+Node *new_node_binop(int ty, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 Node *new_node_ident(const Token *tok);
 FuncDef *new_funcdef(const Token *tok);
@@ -147,6 +152,7 @@ Node *equal(void);
 Node *relational(void);
 Node *add(void);
 Node *mul(void);
+Node *unary(void);
 Node *postfix(void);
 Node *term(void);
 

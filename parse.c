@@ -12,7 +12,15 @@ size_t pos = 0;
 // =============================================================================
 // Tokenization.
 // =============================================================================
-Node *new_node(int ty, Node *lhs, Node *rhs) {
+Node *new_node_uop(int operator, Node *operand) {
+    Node *node = calloc(1, sizeof(Node));
+    node->ty = ND_UEXPR;
+    node->uop = operator;
+    node->operand = operand;
+    return node;
+}
+
+Node *new_node_binop(int ty, Node *lhs, Node *rhs) {
     Node *node = calloc(1, sizeof(Node));
     node->ty = ty;
     node->lhs = lhs;
@@ -154,6 +162,7 @@ void tokenize(char *p) {
 
         // One-letter tokens.
         switch (*p) {
+        case '&':
         case '(':
         case ')':
         case '*':
@@ -231,7 +240,8 @@ static void error(const char *msg, size_t i) {
 // relational': '' | "<" relational | ">" relational | "<=" relational | ">=" relational
 // add: mul add'
 // add': '' | "+" add' | "-" add'
-// mul: postfix | postfix "*" mul | postfix "/" mul
+// mul: unary | unary "*" mul | unary "/" mul
+// unary: postfix | '*' unary | '&' unary
 // postfix: term | term "(" ")"
 // term: num | "(" assign ")"
 void program(void) {
@@ -320,7 +330,7 @@ Node *compound(void) {
     if (!consume('}'))
         error("A compound statement not terminated with '}'.", pos);
 
-    Node *comp_stmt = new_node(ND_COMPOUND, NULL, NULL);
+    Node *comp_stmt = new_node_binop(ND_COMPOUND, NULL, NULL);
     comp_stmt->stmts = code;
     return comp_stmt;
 }
@@ -331,7 +341,7 @@ Node *statement(void) {
     switch(tok->ty) {
     case ';':
         // Empty statement.
-        node = new_node(ND_BLANK, NULL, NULL);
+        node = new_node_binop(ND_BLANK, NULL, NULL);
         break;
     case '{':
         // Compound statement.
@@ -357,7 +367,7 @@ Node *statement(void) {
             rhs = new_node_num(0);
         else
             rhs = assign();
-        node = new_node(ND_RETURN, NULL, rhs);
+        node = new_node_binop(ND_RETURN, NULL, rhs);
         break;
     default:
         node = assign();
@@ -371,12 +381,12 @@ Node *statement(void) {
 Node *assign(void) {
     Node *lhs = equal();
     if (consume('='))
-        return new_node('=', lhs, assign());
+        return new_node_binop('=', lhs, assign());
     return lhs;
 }
 
 Node *selection(void) {
-    Node *node = new_node(ND_IF, NULL, NULL);
+    Node *node = new_node_binop(ND_IF, NULL, NULL);
     expect('(');
     node->cond = assign();
     expect(')');
@@ -388,7 +398,7 @@ Node *selection(void) {
 }
 
 Node *iteration_while(void) {
-    Node *node = new_node(ND_WHILE, NULL, NULL);
+    Node *node = new_node_binop(ND_WHILE, NULL, NULL);
     expect('(');
     node->cond = assign();
     expect(')');
@@ -397,22 +407,22 @@ Node *iteration_while(void) {
 }
 
 Node *iteration_for(void) {
-    Node *node = new_node(ND_FOR, NULL, NULL);
+    Node *node = new_node_binop(ND_FOR, NULL, NULL);
     expect('(');
     if (get_token(pos)->ty != ';')
         node->init = assign();
     else
-        node->init = new_node(ND_BLANK, NULL, NULL);
+        node->init = new_node_binop(ND_BLANK, NULL, NULL);
     expect(';');
     if (get_token(pos)->ty != ';')
         node->cond = assign();
     else
-        node->cond = new_node(ND_BLANK, NULL, NULL);
+        node->cond = new_node_binop(ND_BLANK, NULL, NULL);
     expect(';');
     if (get_token(pos)->ty != ')')
         node->step = assign();
     else
-        node->step = new_node(ND_BLANK, NULL, NULL);
+        node->step = new_node_binop(ND_BLANK, NULL, NULL);
     expect(')');
     node->then = statement();
     return node;
@@ -421,32 +431,32 @@ Node *iteration_for(void) {
 Node *equal(void) {
     Node *lhs = relational();
     if (consume(TK_EQUAL))
-        return new_node(ND_EQUAL, lhs, equal());
+        return new_node_binop(ND_EQUAL, lhs, equal());
     if (consume(TK_NOTEQUAL))
-        return new_node(ND_NOTEQUAL, lhs, equal());
+        return new_node_binop(ND_NOTEQUAL, lhs, equal());
     return lhs;
 }
 
 Node *relational(void) {
     Node *lhs = add();
     if (consume('<'))
-        return new_node('<', lhs, relational());
+        return new_node_binop('<', lhs, relational());
     if (consume('>'))
-        return new_node('>', lhs, relational());
+        return new_node_binop('>', lhs, relational());
     if (consume(TK_LESSEQUAL))
-        return new_node(ND_LESSEQUAL, lhs, relational());
+        return new_node_binop(ND_LESSEQUAL, lhs, relational());
     if (consume(TK_GREATEREQUAL))
-        return new_node(ND_GREATEREQUAL, lhs, relational());
+        return new_node_binop(ND_GREATEREQUAL, lhs, relational());
     return lhs;
 }
 
 Node *add(void) {
     Node *lhs = mul();
     if (consume('+')) {
-        return new_node('+', lhs, add());
+        return new_node_binop('+', lhs, add());
     }
     if (consume('-')) {
-        return new_node('-', lhs, add());
+        return new_node_binop('-', lhs, add());
     }
 
     return lhs;
@@ -454,16 +464,27 @@ Node *add(void) {
 
 // Parse a multiplicative expression.
 Node *mul(void) {
-    Node *lhs = postfix();
+    Node *lhs = unary();
     switch(get_token(pos)->ty) {
     case '*':
         ++pos;
-        return new_node('*', lhs, mul());
+        return new_node_binop('*', lhs, mul());
     case '/':
         ++pos;
-        return new_node('/', lhs, mul());
+        return new_node_binop('/', lhs, mul());
     default:
         return lhs;
+    }
+}
+
+Node *unary(void) {
+    Token *tok = get_token(pos);
+    if (tok->ty == '*' || tok->ty == '&') {
+        ++pos;
+        Node *operand = unary();
+        return new_node_uop(tok->ty, operand);
+    } else {
+        return postfix();
     }
 }
 

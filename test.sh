@@ -45,11 +45,19 @@ try 5 'int main() { return 60/12; }'
 try 5 'int main() { return 1+60/12-1; }'
 try 20 'int main() { return (2+3)*4; }'
 try 7 'int main() { 1; 2; return 3+4; }'
+
+# Local variables.
 try 3 'int main() { int a; a=1; return a+2; }'
 try 3 'int main() { int x; x = 1; x = x + 2; return x; }'
 try 4 'int main() { int _long_variable_1_; _long_variable_1_ = 2; return _long_variable_1_ * 2; }'
 try 5 'int main() { int foo; int bar; int baz; foo=1; bar=baz=foo+1; return foo+bar*baz; }'
 try 1 'int main() { int foo; foo = 0; return (foo = foo + 3) == 3; }'
+
+# Pointers.
+try 3 'int main() { int x; int *y; y = &x; x = 3; return *y; }'
+try 3 'int main() { int x; int *y; y = &x; *y = 3; return x; }'
+
+# Relations.
 try 0 'int main() { return 2 == 2+1; }'
 try 1 'int main() { return 2 != 2+1; }'
 try 1 'int main() { return 3-1 == 2; }'
@@ -72,6 +80,8 @@ try 0 'int main() { return 1 <= 10 != 10 >= 1; }'
 try 1 'int main() { return 1 <= 10 == 10 >= 1; }'
 try 2 'int main() { int i; int j; i = j = 2+3*4 == 14; return i + j; }'
 try 0 'int main() { int i; int j; i = j = 2+3*4 != 14; return i + j; }'
+
+# Functions.
 try 2 'int main() { return two(); }'
 try 6 'int main() { return 1 + (two)() + 3; }'
 try 10 'int main() { return 2 * (two() + 3); }'
@@ -104,6 +114,7 @@ int main() {
     return foo(1, 2, 3, 4, 5, 6, 7, 8) - 87654321;
 }'
 
+# Selection and iteration statements.
 try 0 'int main() { if (0) return 1; return 0; }'
 try 1 'int main() { if (1) return 1; return 0; }'
 try 0 'int main() { if (0) return 1; else return 0; return 127; }'
