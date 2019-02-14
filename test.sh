@@ -54,8 +54,12 @@ try 5 'int main() { int foo; int bar; int baz; foo=1; bar=baz=foo+1; return foo+
 try 1 'int main() { int foo; foo = 0; return (foo = foo + 3) == 3; }'
 
 # Pointers.
-try 3 'int main() { int x; int *y; y = &x; x = 3; return *y; }'
-try 3 'int main() { int x; int *y; y = &x; *y = 3; return x; }'
+try 3 'int main() { int x; int *p; p = &x; x = 3; return *p; }'
+try 3 'int main() { int x; int *p; p = &x; *p = 3; return x; }'
+try 3 'int main() { int x; int *p; int **pp; pp = &p; p = &x; x = 3; return **pp; }'
+try 3 'int main() { int x; int *p; int **pp; pp = &p; p = &x; **pp = 3; return x; }'
+try 3 'int main() { int x; int y; int *p; x = 2; p = &x; y = *p + 1; p = &y; return *p; }'
+try 3 'int main() { int x; int *p; p = &x; *p = 2; *p = 2**p-1; return x; }'
 
 # Relations.
 try 0 'int main() { return 2 == 2+1; }'
