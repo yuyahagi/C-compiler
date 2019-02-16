@@ -19,12 +19,18 @@ try() {
 
 # Prepare a nullary function.
 echo '
+#include <stdlib.h>
 int two() { return 2; }
 int func2(int x0, int x1) { return x0 + 10*x1; }
 int func8(int x0, int x1, int x2, int x3, int x4, int x5, int x6, int x7) {
     return x0 + 10*x1 + 100*x2 + 1000*x3 + 10000*x4 + 100000*x5 + 1000000*x6 + 10000000*x7;
 }
+void alloc4(int **p, int x0, int x1, int x2, int x3) {
+    *p = malloc(4 * sizeof(int));
+    (*p)[0] = x0; (*p)[1] = x1; (*p)[2] = x2; (*p)[3] = x3;
+}
 ' | gcc -xc -c -o tmp_funcs.o -
+
 
 try 0 'int main() {}'
 try 0 'int main() {;}'
@@ -61,6 +67,26 @@ try 3 'int main() { int x; int *p; int **pp; pp = &p; p = &x; **pp = 3; return x
 try 3 'int main() { int x; int y; int *p; x = 2; p = &x; y = *p + 1; p = &y; return *p; }'
 try 3 'int main() { int x; int *p; p = &x; *p = 2; *p = 2**p-1; return x; }'
 
+try 4 '
+int main() {
+    int *p;
+    alloc4(&p, 1, 2, 4, 8);
+    int *q;
+    q = p + 2;
+    return *q;
+}'
+
+try 2 '
+int main() {
+    int *p;
+    alloc4(&p, 1, 2, 4, 8);
+    int offset;
+    offset = 0-1;
+    int *q;
+    q = two() + p + offset;
+    return *q;
+}'
+
 # Relations.
 try 0 'int main() { return 2 == 2+1; }'
 try 1 'int main() { return 2 != 2+1; }'
@@ -92,30 +118,30 @@ try 10 'int main() { return 2 * (two() + 3); }'
 try 21 'int main() { return func2(1, 2); }'
 try 21 'int main() { return func2(3-2, 8/4); }'
 try 21 'int main() { int x; x = 2; return func2(3-x, 4/x); }'
-try 0 'int main() { return func8(1, 2, 3, 4, 5, 6, 7, 8) - 87654321; }'
-try 0 'int main() { int x; x = 2; return func8(1, (x), x+1, x*2, 5, 2*(x+1), 3*x+1, 8) - 87654321; }'
+try 1 'int main() { return func8(1, 2, 3, 4, 5, 6, 7, 8) == 87654321; }'
+try 1 'int main() { int x; x = 2; return func8(1, (x), x+1, x*2, 5, 2*(x+1), 3*x+1, 8) == 87654321; }'
 try 3 'int foo() { return 3; } int main() { return foo(); }'
 try 7 'int foo() { return 3; } int bar() { return 4; } int main() { return foo() + bar(); }'
 try 5 'int foo() { return two()+1; } int main() { return foo() + two(); }'
 try 43 'int foo() { return 3; } int bar() { return 4; } int main() { return func2(foo(), bar()); }'
 try 3 'int foo(int x0, int x1) { return x0 + x1; } int main() { return foo(1, 2); }'
 
-try 0 '
+try 1 '
 int foo(int x0, int x1, int x2, int x3, int x4, int x5) {
     return x0 + 10*x1 + 100*x2 + 1000*x3 + 10000*x4 + 100000*x5;
 }
-int main() { return foo(1, 2, 3, 4, 5, 6) - 654321; }'
+int main() { return foo(1, 2, 3, 4, 5, 6) == 654321; }'
 
 try 14 '
 int foo(int x) { int a; a = 3; return a * x; }
 int main() { int b; b = 2; return foo(4) + b; }'
 
-try 0 '
+try 1 '
 int foo(int x0, int x1, int x2, int x3, int x4, int x5, int x6, int x7) {
     return x0 + 10*x1 + 100*x2 + 1000*x3 + 10000*x4 + 100000*x5 + 1000000*x6 + 10000000*x7;
 }
 int main() {
-    return foo(1, 2, 3, 4, 5, 6, 7, 8) - 87654321;
+    return foo(1, 2, 3, 4, 5, 6, 7, 8) == 87654321;
 }'
 
 # Selection and iteration statements.

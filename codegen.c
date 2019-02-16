@@ -48,13 +48,14 @@ static void idents_in_func(const FuncDef *func, Map *idents) {
             make_type(INT, NULL),
             -8 * (idents->keys->len+1));
     }
-    // The rest of args are in stack. Store positive offsets.
+    // The rest of args are in stack. Store positive offsets,
+    // skipping pushed rbp and the return address.
     for (int i = nstackargs - 1; i >= 0; i--) {
         put_ident(
             idents,
             ((Node *)func->args->data[i+6])->name,
             make_type(INT, NULL),
-            8 * (i + 1));
+            8 * (i + 2));
     }
     // Count identifiers in the function body and assign offsets.
     decls_to_offsets(func->body->stmts, idents);
@@ -113,10 +114,30 @@ static void gen_lval(Node *node, const Map *idents) {
 
 static void gen_add(Node *node, const Map *idents) {
     assert(node->ty == '+' || node->ty == '-');
-    assert(node->lhs->type->ty == INT);
+    assert(node->lhs->type);
+    assert(node->rhs->type);
+
+    bool lhs_is_ptr = node->lhs->type->ty == PTR;
+    bool rhs_is_ptr = node->rhs->type->ty == PTR;
+    if (lhs_is_ptr && rhs_is_ptr) {
+        fprintf(stderr, "Pointer +/- pointer operation not supported (yet).\n");
+        exit(1);
+    }
+
+    // int or pointer arithmatic.
     gen(node->lhs, idents);
+    if (rhs_is_ptr) {
+        int ptrsize = node->rhs->type->ptr_of->ty == INT ? 4 : 8;
+        printf("  mov rdi, %d\n", ptrsize);
+        printf("  mul rdi\n");
+    }
     push("rax");
     gen(node->rhs, idents);
+    if (lhs_is_ptr) {
+        int ptrsize = node->lhs->type->ptr_of->ty == INT ? 4 : 8;
+        printf("  mov rdi, %d\n", ptrsize);
+        printf("  mul rdi\n");
+    }
     push("rax");
     pop("rdi");
     pop("rax");
