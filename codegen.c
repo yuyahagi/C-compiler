@@ -82,7 +82,9 @@ static void pop(const char *reg) {
     assert(stackpos >= 0);
 }
 
-void gen_lval(Node *node, const Map *idents) {
+static void gen(Node *node, const Map *idents);
+
+static void gen_lval(Node *node, const Map *idents) {
 #pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
     switch (node->ty) {
     case ND_IDENT:
@@ -109,7 +111,23 @@ void gen_lval(Node *node, const Map *idents) {
     }
 }
 
-void gen(Node *node, const Map *idents) {
+static void gen_add(Node *node, const Map *idents) {
+    assert(node->ty == '+' || node->ty == '-');
+    assert(node->lhs->type->ty == INT);
+    gen(node->lhs, idents);
+    push("rax");
+    gen(node->rhs, idents);
+    push("rax");
+    pop("rdi");
+    pop("rax");
+
+    if (node->ty == '+')
+        printf("  add rax, rdi\n");
+    else 
+        printf("  sub rax, rdi\n");
+}
+
+static void gen(Node *node, const Map *idents) {
     switch (node->ty) {
     case ND_BLANK:
         return;
@@ -270,6 +288,11 @@ void gen(Node *node, const Map *idents) {
         pop("rdi");
         printf("  mov [rdi], rax\n");
         return;
+
+    case '+':
+    case '-':   // Fall through.
+        gen_add(node, idents);
+        return;
     }
 
     // Binary operators.
@@ -282,12 +305,6 @@ void gen(Node *node, const Map *idents) {
     pop("rax");
 
     switch (node->ty) {
-    case '+':
-        printf("  add rax, rdi\n");
-        break;
-    case '-':
-        printf("  sub rax, rdi\n");
-        break;
     case '*':
         printf("  mul rdi\n");
         break;

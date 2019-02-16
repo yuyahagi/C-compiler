@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -12,11 +13,33 @@ size_t pos = 0;
 // =============================================================================
 // Tokenization.
 // =============================================================================
+static Map *localvars = NULL;
+
+Type *deduce_type(Node *lhs, Node *rhs) {
+    if (lhs)
+        return lhs->type;
+    return NULL;
+}
+
 Node *new_node_uop(int operator, Node *operand) {
+    assert(operator == '*' || operator == '&');
     Node *node = calloc(1, sizeof(Node));
     node->ty = ND_UEXPR;
     node->uop = operator;
     node->operand = operand;
+    // Deduce type.
+    Type *type = NULL;
+    switch (operator) {
+    case '*':
+        type = operand->type->ptr_of;
+        break;
+    case '&':
+        type = calloc(1, sizeof(Type));
+        type->ty = PTR;
+        type->ptr_of = operand->type;
+        break;
+    }
+    node->type = type;
     return node;
 }
 
@@ -25,6 +48,7 @@ Node *new_node_binop(int ty, Node *lhs, Node *rhs) {
     node->ty = ty;
     node->lhs = lhs;
     node->rhs = rhs;
+    node->type = deduce_type(lhs, rhs);
     return node;
 }
 
@@ -32,6 +56,9 @@ Node *new_node_num(int val) {
     Node *node = calloc(1, sizeof(Node));
     node->ty = ND_NUM;
     node->val = val;
+    node->type = calloc(1, sizeof(Type));
+    node->type->ty = INT;
+    node->type->ptr_of = NULL;
     return node;
 }
 
@@ -48,7 +75,8 @@ Node *new_node_declaration(const Token *tok, Type *type) {
     return node;
 }
 
-Node *new_node_ident(const Token *tok) {
+// If type is NULL, this will look its type from declarations.
+Node *new_node_ident(const Token *tok, Type *type) {
     Node *node = calloc(1, sizeof(Node));
     node->ty = ND_IDENT;
     // Copy identifier name.
@@ -56,6 +84,10 @@ Node *new_node_ident(const Token *tok) {
     node->name = malloc(len + 1);
     strncpy(node->name, tok->input, len);
     node->name[len] = '\0';
+    if (type)
+        node->type = type;
+    else
+        node->type = (Type *)map_get(localvars, node->name);
     return node;
 }
 
@@ -244,46 +276,6 @@ static void error(const char *msg, size_t i) {
 // unary: postfix | '*' unary | '&' unary
 // postfix: term | term "(" ")"
 // term: num | "(" assign ")"
-void program(void) {
-    funcdefs = new_vector();
-    pos = 0;
-    while (get_token(pos)->ty != TK_EOF) {
-        vec_push(funcdefs, (void *)funcdef());
-    }
-}
-
-static Node *parse_func_param() {
-    if (!consume(TK_TYPE_INT))
-        error("Missing type specifier for a function parameter.\n", pos);
-    return new_node_ident(get_token(pos++));
-}
-
-FuncDef *funcdef(void) {
-    if (!consume(TK_TYPE_INT))
-        error("Missing return type of a function definition.\n", pos);
-
-    Token *tok = get_token(pos);
-    if (tok->ty != TK_IDENT)
-        error("A function definition expected but not found.\n", pos);
-    ++pos;
-
-    FuncDef *func = new_funcdef(tok);
-
-    func->args = new_vector();
-    if (!consume('('))
-        error("'(' expected but not found.\n", pos);
-    if (!consume(')')) {
-        vec_push(func->args, parse_func_param());
-        while (consume(',')) {
-            vec_push(func->args, parse_func_param());
-        }
-        expect(')');
-    }
-
-    func->body = compound();
-    return func;
-}
-
 static Type *read_type(Type *inner) {
     if (!inner) {
         expect(TK_TYPE_INT);
@@ -304,11 +296,57 @@ static Type *read_type(Type *inner) {
     return inner;
 }
 
+void program(void) {
+    funcdefs = new_vector();
+    pos = 0;
+    while (get_token(pos)->ty != TK_EOF) {
+        vec_push(funcdefs, (void *)funcdef());
+    }
+}
+
+static Node *parse_func_param() {
+    if (get_token(pos)->ty != TK_TYPE_INT)
+        error("Missing type specifier for a function parameter.\n", pos);
+    Type *type = read_type(NULL);
+    Node *node = new_node_ident(get_token(pos++), type);
+    map_put(localvars, node->name, type);
+    return node;
+}
+
+FuncDef *funcdef(void) {
+    if (!consume(TK_TYPE_INT))
+        error("Missing return type of a function definition.\n", pos);
+
+    Token *tok = get_token(pos);
+    if (tok->ty != TK_IDENT)
+        error("A function definition expected but not found.\n", pos);
+    ++pos;
+
+    // Prepare a new set of local variables.
+    localvars = new_map();
+    FuncDef *func = new_funcdef(tok);
+
+    func->args = new_vector();
+    if (!consume('('))
+        error("'(' expected but not found.\n", pos);
+    if (!consume(')')) {
+        vec_push(func->args, parse_func_param());
+        while (consume(',')) {
+            vec_push(func->args, parse_func_param());
+        }
+        expect(')');
+    }
+
+    func->body = compound();
+    return func;
+}
+
 Node *declaration(void) {
     Type *type = read_type(NULL);
     if (get_token(pos)->ty != TK_IDENT)
         error("An identifier is expected but not found.\n", pos);
     Node *node = new_node_declaration(get_token(pos++), type);
+    map_put(localvars, node->name, type);
     return node;
 }
 
@@ -332,6 +370,7 @@ Node *compound(void) {
 
     Node *comp_stmt = new_node_binop(ND_COMPOUND, NULL, NULL);
     comp_stmt->stmts = code;
+    comp_stmt->localvars = localvars;
     return comp_stmt;
 }
 
@@ -497,6 +536,12 @@ Node *postfix(void) {
     node->ty = ND_CALL;
     node->args = new_vector();
 
+    // Set return type.
+    // For now, we assume all functions return an int.
+    node->type = calloc(1, sizeof(Type));
+    node->type->ty = INT;
+    node->type->ptr_of = NULL;
+
     // Nullary function call.
     if (consume(')'))
         return node;
@@ -518,7 +563,7 @@ Node *term(void) {
     if (get_token(pos)->ty == TK_NUM)
         return new_node_num(get_token(pos++)->val);
     if (get_token(pos)->ty == TK_IDENT)
-        return new_node_ident(get_token(pos++));
+        return new_node_ident(get_token(pos++), NULL);
 
     if (!consume('('))
         error("A token neither a number nor an opening parenthesis.", pos);

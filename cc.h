@@ -114,6 +114,7 @@ typedef struct Node {
     Vector *args;       // For function calls.
 
     Vector *stmts;      // Compound statement.
+    Map *localvars;     // Local variables in a compound statement.
 
     int uop;            // Unary operator.
     struct Node *operand;
@@ -135,7 +136,7 @@ extern Vector *funcdefs;
 Node *new_node_uop(int ty, Node *operand);
 Node *new_node_binop(int ty, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
-Node *new_node_ident(const Token *tok);
+Node *new_node_ident(const Token *tok, Type *type);
 FuncDef *new_funcdef(const Token *tok);
 
 // Function to parse an expression to abstract syntax trees.
@@ -160,6 +161,4 @@ Node *term(void);
 // =============================================================================
 // Assembly generation.
 // =============================================================================
-void gen(Node *node, const Map *idents);
-void gen_lval(Node *node, const Map *idents);
 void gen_function(FuncDef *func);
