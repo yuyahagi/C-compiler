@@ -29,6 +29,12 @@ void alloc4(int **p, int x0, int x1, int x2, int x3) {
     *p = malloc(4 * sizeof(int));
     (*p)[0] = x0; (*p)[1] = x1; (*p)[2] = x2; (*p)[3] = x3;
 }
+void allocptr4(int ***pp, int x0, int x1, int x2, int x3) {
+    int *p = malloc(4 * sizeof(int));
+    p[0] = x0; p[1] = x1; p[2] = x2; p[3] = x3;
+    *pp = malloc(4 * sizeof(int*));
+    (*pp)[0] = &p[0]; (*pp)[1] = &p[1]; (*pp)[2] = &p[2]; (*pp)[3] = &p[3];
+}
 ' | gcc -xc -c -o tmp_funcs.o -
 
 
@@ -81,10 +87,18 @@ int main() {
     int *p;
     alloc4(&p, 1, 2, 4, 8);
     int offset;
-    offset = 0-1;
+    offset = 1;
     int *q;
-    q = two() + p + offset;
+    q = two() + p - offset;
     return *q;
+}'
+
+try 4 '
+int main() {
+    int **pp;
+    allocptr4(&pp, 1, 2, 4, 8);
+    pp = pp + 2;
+    return **pp;
 }'
 
 # Relations.
