@@ -101,6 +101,9 @@ int main() {
     return **pp;
 }'
 
+# Arrays.
+try 0 'int main() { int ar[10]; }'
+
 # Relations.
 try 0 'int main() { return 2 == 2+1; }'
 try 1 'int main() { return 2 != 2+1; }'

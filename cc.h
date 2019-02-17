@@ -89,8 +89,9 @@ enum {
 struct Node;
 
 typedef struct Type {
-    enum { INT, PTR } ty;
+    enum { INT, PTR, ARRAY } ty;
     struct Type *ptr_of;
+    size_t array_len;
 } Type;
 
 typedef struct {
@@ -143,6 +144,7 @@ FuncDef *new_funcdef(const Token *tok);
 void program(void);
 FuncDef *funcdef(void);
 Node *declaration(void);
+Node *direct_declarator(Type *type);
 Node *compound(void);
 Node *statement(void);
 Node *assign(void);

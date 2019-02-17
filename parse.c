@@ -62,14 +62,11 @@ Node *new_node_num(int val) {
     return node;
 }
 
-Node *new_node_declaration(const Token *tok, Type *type) {
+Node *new_node_declaration(const Node* declarator, Type *type) {
     Node *node = calloc(1, sizeof(Node));
     node->ty = ND_DECLARATION;
     // Copy identifier name.
-    size_t len = tok->len;
-    node->name = malloc(len + 1);
-    strncpy(node->name, tok->input, len);
-    node->name[len] = '\0';
+    node->name = declarator->name;
     // Set type.
     node->type = type;
     return node;
@@ -206,6 +203,8 @@ void tokenize(char *p) {
         case '<':
         case '=':
         case '>':
+        case '[':
+        case ']':
         case '{':
         case '}':
             push_token(*p, p, 0, 1);
@@ -243,7 +242,7 @@ static void expect(int ty) {
     }
 
     if (isprint(ty))
-        fprintf(stderr, "A token of type %c expected but was %d.\n", ty, get_token(pos)->ty);
+        fprintf(stderr, "A token of type %c expected but was %c.\n", ty, get_token(pos)->ty);
     else
         fprintf(stderr, "A token of type %d expected but was %d.\n", ty, get_token(pos)->ty);
     exit(1);
@@ -259,7 +258,8 @@ static void error(const char *msg, size_t i) {
 // program: {funcdef}*
 // funcdef: ident "(" parameter-list ")" compound
 // compound: "{" {declaration}* {statement}* "}"
-// declaration: "int" {"*"}* identifier
+// declaration: "int" {"*"}* direct_declarator
+// direct_declarator: ident | direct_declarator "[" num "]"
 // statement: assign ";" | selection | iteration | "return" ";" | "return" assign ";"
 // assign: equal assign'
 // assign': '' | "=" assign'
@@ -343,10 +343,35 @@ FuncDef *funcdef(void) {
 
 Node *declaration(void) {
     Type *type = read_type(NULL);
+    Node *declarator = direct_declarator(type);
+    Node *node = new_node_declaration(declarator, type);
+    map_put(localvars, node->name, type);
+    return node;
+}
+
+Node *direct_declarator(Type *type) {
+    if (type->ty == ARRAY)
+        error("Recursive declarator. Not implemented yet.\n", pos);
     if (get_token(pos)->ty != TK_IDENT)
         error("An identifier is expected but not found.\n", pos);
-    Node *node = new_node_declaration(get_token(pos++), type);
-    map_put(localvars, node->name, type);
+
+    Node *node = new_node_ident(get_token(pos++), type);
+
+    if (consume('[')) {
+        // Array declaration. Parse and set an array type.
+        Token *tok = get_token(pos++);
+        if (tok->ty != TK_NUM)
+            error("Array length must be specified with an integer literal.\n", pos);
+        expect(']');
+
+        Type *artype = calloc(1, sizeof(Type));
+        artype->ty = ARRAY;
+        artype->ptr_of = type;
+        artype->array_len = tok->val;
+
+        node->type = artype;
+    }
+
     return node;
 }
 
