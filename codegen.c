@@ -23,20 +23,42 @@ static void put_ident(Map *idents, char *name, Type *type, int offset) {
     map_put(idents, name, (void *)(ident));
 }
 
-static void decls_to_offsets(const Vector *code, Map *idents) {
+static int decls_to_offsets(const Vector *code, Map *idents, int starting_offset) {
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
     // Search for declarations and assign offsets.
+    int offset = starting_offset;
     for (int i = 0; i < code->len; i++) {
         Node *node = (Node *)code->data[i];
         if (node->ty != ND_DECLARATION)
             continue;
 
-        put_ident(idents, node->name, node->type, -8 * (idents->keys->len+1));
+        put_ident(idents, node->name, node->type, offset);
+        switch (node->type->ty) {
+        case INT:
+        case PTR:
+            offset -= 8;
+            break;
+        case ARRAY:
+            fprintf(stderr, "Array offset\n");
+            // Currently only supports int arrays.
+            assert(node->type->ptr_of->ty == INT);
+            int intsize = 4;
+            offset -= intsize * node->type->array_len;
+            // Align to 8 bytes (assuming offset <= 0);
+            offset -= offset & 7;
+            assert(offset % 8 == 0);
+            break;
+        default:
+            fprintf(stderr, "Unknown type id %d.\n", node->type->ty);
+            exit(1);
+        }
     }
+    return offset;
 }
 
 // Count identifiers in a compound statement and assign offset.
-static void idents_in_func(const FuncDef *func, Map *idents) {
+static int idents_in_func(const FuncDef *func, Map *idents) {
+    int offset = -8;
     // First 6 function parameters are to be copied to the stack.
     int nargs = func->args->len;
     int nregargs = nargs <= 6 ? nargs : 6;
@@ -46,7 +68,8 @@ static void idents_in_func(const FuncDef *func, Map *idents) {
             idents,
             ((Node *)func->args->data[i])->name,
             make_type(INT, NULL),
-            -8 * (idents->keys->len+1));
+            offset);
+        offset -= 8;
     }
     // The rest of args are in stack. Store positive offsets,
     // skipping pushed rbp and the return address.
@@ -58,7 +81,8 @@ static void idents_in_func(const FuncDef *func, Map *idents) {
             8 * (i + 2));
     }
     // Count identifiers in the function body and assign offsets.
-    decls_to_offsets(func->body->stmts, idents);
+    int offset_end = decls_to_offsets(func->body->stmts, idents, offset);
+    return offset_end + 8;
 }
 
 // Track stack position for adjusting alignment.
@@ -380,9 +404,10 @@ void gen_function(FuncDef *func) {
     // allocate stack for local variables. If an identifier gets redefined,
     // it may count it twice or more but it's ok.
     Map *idents = new_map();
-    idents_in_func(func, idents);
-    printf("  sub rsp, %d\n", 8 * idents->keys->len);
-    stackpos += 8 * idents->keys->len;
+    int stack_offset = idents_in_func(func, idents);
+    assert(stack_offset <= 0);
+    printf("  sub rsp, %d\n", -stack_offset);
+    stackpos += -stack_offset;
 
     // First 6 function parameters are in registers. Copy them to stack.
     const char *regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };

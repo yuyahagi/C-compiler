@@ -344,7 +344,7 @@ FuncDef *funcdef(void) {
 Node *declaration(void) {
     Type *type = read_type(NULL);
     Node *declarator = direct_declarator(type);
-    Node *node = new_node_declaration(declarator, type);
+    Node *node = new_node_declaration(declarator, declarator->type);
     map_put(localvars, node->name, type);
     return node;
 }

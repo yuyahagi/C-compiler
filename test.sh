@@ -102,7 +102,7 @@ int main() {
 }'
 
 # Arrays.
-try 0 'int main() { int ar[10]; }'
+try 0 'int main() { int ar[9]; }'
 
 # Relations.
 try 0 'int main() { return 2 == 2+1; }'
