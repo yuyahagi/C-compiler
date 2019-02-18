@@ -126,8 +126,7 @@ static void gen_lval(Node *node, const Map *idents) {
 
     case ND_UEXPR:
         assert(node->uop == '*');
-        gen_lval(node->operand, idents);
-        printf("  mov rax, [rax]\n");
+        gen(node->operand, idents);
         return;
 
     default:

@@ -82,6 +82,23 @@ int main() {
     return *q;
 }'
 
+try 4 '
+int main() {
+    int *p;
+    alloc4(&p, 1, 2, 4, 8);
+    return *(2 + p);
+}'
+
+try 3 '
+int main() {
+    int *p;
+    alloc4(&p, 1, 2, 4, 8);
+    int *q;
+    q = p + 1;
+    *(p + 1) = 3;
+    return *q;
+}'
+
 try 2 '
 int main() {
     int *p;
@@ -91,6 +108,15 @@ int main() {
     int *q;
     q = two() + p - offset;
     return *q;
+}'
+
+try 2 '
+int main() {
+    int *p;
+    alloc4(&p, 1, 2, 4, 8);
+    int offset;
+    offset = 1;
+    return *(two() + p - offset);
 }'
 
 try 4 '
