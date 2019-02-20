@@ -134,6 +134,9 @@ try 1 'int main() { int ar[3]; *ar=1; return *ar; }'
 try 2 'int main() { int ar[3]; int *p; p = ar; *(p+1) = 2; return *(ar+1); }'
 try 7 'int main() { int ar[3]; int *p; p = ar; *p = 1; *(p+1) = 2; *(p+2) = 4; return *ar + *(ar+1) + *(ar+2); }'
 try 7 'int main() { int ar[3]; *ar=1; *(ar+1) = 2; *(ar+2) = 4; return *ar + *(ar+1) + *(ar+2); }'
+try 7 'int main() { int ar[3]; *ar = 1; *(ar+1) = 2; *(ar+2) = 4; return ar[0] + ar[1] + ar[2]; }'
+try 7 'int main() { int ar[3]; ar[0] = 1; ar[1] = 2; ar[2] = 4; return *ar + *(ar+1) + *(ar+2); }'
+try 2 'int main() { int ar[3]; int i; i = 1; ar[i] = 2; return ar[i]; }'
 
 # Relations.
 try 0 'int main() { return 2 == 2+1; }'
@@ -256,6 +259,15 @@ int main() {
         prod = prod * i;
     }
     return sum + prod;
+}'
+try 13 '
+int main() {
+    int fib[7]; int i;
+    fib[0] = 1;
+    fib[1] = 1;
+    for (i = 2; i < 7; i = i + 1)
+        fib[i] = fib[i-1] + fib[i-2];
+    return fib[6];
 }'
 
 echo OK

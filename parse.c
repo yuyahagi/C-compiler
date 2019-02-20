@@ -274,7 +274,7 @@ static void error(const char *msg, size_t i) {
 // add': '' | "+" add' | "-" add'
 // mul: unary | unary "*" mul | unary "/" mul
 // unary: postfix | '*' unary | '&' unary
-// postfix: term | term "(" ")"
+// postfix: term | postfix "(" {assign}* ")" | postfix "[" assign "]"
 // term: num | "(" assign ")"
 static Type *read_type(Type *inner) {
     if (!inner) {
@@ -556,30 +556,45 @@ Node *unary(void) {
 
 Node *postfix(void) {
     Node *node = term();
-    if (!consume('('))
-        return node;
+    Token *tok = get_token(pos);
 
-    // Function call.
-    node->ty = ND_CALL;
-    node->args = new_vector();
+    switch (tok->ty) {
+    case '(':
+        // Function call.
+        ++pos;
+        node->ty = ND_CALL;
+        node->args = new_vector();
 
-    // Set return type.
-    // For now, we assume all functions return an int.
-    node->type = calloc(1, sizeof(Type));
-    node->type->ty = INT;
-    node->type->ptr_of = NULL;
+        // Set return type.
+        // For now, we assume all functions return an int.
+        node->type = calloc(1, sizeof(Type));
+        node->type->ty = INT;
+        node->type->ptr_of = NULL;
 
-    // Nullary function call.
-    if (consume(')'))
-        return node;
+        // Nullary function call.
+        if (consume(')'))
+            return node;
 
-    // List arguments.
-    vec_push(node->args, assign());
-    while (consume(','))
+        // List arguments.
         vec_push(node->args, assign());
-    if (!consume(')')) {
-        error("No closing parenthesis ')' for function call.", pos);
-        exit(1);
+        while (consume(','))
+            vec_push(node->args, assign());
+        if (!consume(')'))
+            error("No closing parenthesis ')' for function call.", pos);
+        break;
+
+    case '[':
+    {
+        // Array accessor. Convert "ar[i]" as "*(ar+i)".
+        ++pos;
+        Node *lhs = node;
+        Node *rhs = assign();
+        Node *binop = new_node_binop('+', lhs, rhs);
+        node = new_node_uop('*', binop);
+        if (!consume(']'))
+            error("No closing bracket for array index.", pos);
+        break;
+    }
     }
 
     return node;
