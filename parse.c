@@ -342,10 +342,12 @@ FuncDef *funcdef(void) {
 }
 
 Node *declaration(void) {
+    // Read type before identifier, e.g., "int **".
     Type *type = read_type(NULL);
+    // Declarator after identifier may alter the type.
     Node *declarator = direct_declarator(type);
     Node *node = new_node_declaration(declarator, declarator->type);
-    map_put(localvars, node->name, type);
+    map_put(localvars, node->name, declarator->type);
     return node;
 }
 

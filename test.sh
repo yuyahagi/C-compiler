@@ -129,6 +129,11 @@ int main() {
 
 # Arrays.
 try 0 'int main() { int ar[9]; }'
+try 0 'int main() { int ar[3]; int *p; p = ar; }'
+try 1 'int main() { int ar[3]; *ar=1; return *ar; }'
+try 2 'int main() { int ar[3]; int *p; p = ar; *(p+1) = 2; return *(ar+1); }'
+try 7 'int main() { int ar[3]; int *p; p = ar; *p = 1; *(p+1) = 2; *(p+2) = 4; return *ar + *(ar+1) + *(ar+2); }'
+try 7 'int main() { int ar[3]; *ar=1; *(ar+1) = 2; *(ar+2) = 4; return *ar + *(ar+1) + *(ar+2); }'
 
 # Relations.
 try 0 'int main() { return 2 == 2+1; }'

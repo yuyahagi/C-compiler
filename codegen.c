@@ -32,20 +32,20 @@ static int decls_to_offsets(const Vector *code, Map *idents, int starting_offset
         if (node->ty != ND_DECLARATION)
             continue;
 
-        put_ident(idents, node->name, node->type, offset);
         switch (node->type->ty) {
         case INT:
         case PTR:
+            put_ident(idents, node->name, node->type, offset);
             offset -= 8;
             break;
         case ARRAY:
-            fprintf(stderr, "Array offset\n");
             // Currently only supports int arrays.
             assert(node->type->ptr_of->ty == INT);
             int intsize = 4;
             offset -= intsize * node->type->array_len;
             // Align to 8 bytes (assuming offset <= 0);
             offset -= offset & 7;
+            put_ident(idents, node->name, node->type, offset + 8);
             assert(offset % 8 == 0);
             break;
         default:
@@ -107,6 +107,8 @@ static void pop(const char *reg) {
     assert(stackpos >= 0);
 }
 
+static void gen_lval(Node* node, const Map *idents);
+static void gen_add(Node *node, const Map *idents);
 static void gen(Node *node, const Map *idents);
 
 static void gen_lval(Node *node, const Map *idents) {
@@ -126,7 +128,18 @@ static void gen_lval(Node *node, const Map *idents) {
 
     case ND_UEXPR:
         assert(node->uop == '*');
-        gen(node->operand, idents);
+        if (node->operand->type->ty == ARRAY) {
+            // An array. Keep address itself.
+            gen_lval(node->operand, idents);
+        } else {
+            // A pointer. Take the content and treat it as an address.
+            gen(node->operand, idents);
+        }
+        return;
+
+    case '+':
+    case '-':   // Fall through.
+        gen_add(node, idents);
         return;
 
     default:
@@ -140,8 +153,8 @@ static void gen_add(Node *node, const Map *idents) {
     assert(node->lhs->type);
     assert(node->rhs->type);
 
-    bool lhs_is_ptr = node->lhs->type->ty == PTR;
-    bool rhs_is_ptr = node->rhs->type->ty == PTR;
+    bool lhs_is_ptr = node->lhs->type->ty == PTR || node->lhs->type->ty == ARRAY;
+    bool rhs_is_ptr = node->rhs->type->ty == PTR || node->rhs->type->ty == ARRAY;
     if (lhs_is_ptr && rhs_is_ptr) {
         fprintf(stderr, "Pointer +/- pointer operation not supported (yet).\n");
         exit(1);
@@ -185,7 +198,10 @@ static void gen(Node *node, const Map *idents) {
 
     case ND_IDENT:
         gen_lval(node, idents);
-        printf("  mov rax, [rax]\n");
+        // If the identifier is an array, we take its address as its value.
+        // Otherwise, we take the value at its address.
+        if (node->type->ty != ARRAY)
+            printf("  mov rax, [rax]\n");
         return;
 
     case ND_UEXPR:
