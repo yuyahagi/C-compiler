@@ -57,7 +57,7 @@ static int decls_to_offsets(const Vector *code, Map *idents, int starting_offset
 }
 
 // Count identifiers in a compound statement and assign offset.
-static int idents_in_func(const FuncDef *func, Map *idents) {
+static int idents_in_func(const Node *func, Map *idents) {
     int offset = -8;
     // First 6 function parameters are to be copied to the stack.
     int nargs = func->args->len;
@@ -117,13 +117,24 @@ static void gen_lval(Node *node, const Map *idents) {
     case ND_IDENT:
     {
         Ident *ident = (Ident *)map_get(idents, node->name);
-        int offset = ident->offset;
-        if (offset == 0) {
-            fprintf(stderr, "An unknown identifier %s.\n", node->name);
-            exit(1);
+        if (ident) {
+            // Local variable found.
+            int offset = ident->offset;
+            printf("  lea rax, [rbp%+d]\n", offset);
+            return;
         }
-        printf("  lea rax, [rbp%+d]\n", offset);
-        return;
+
+        // Local variable not found. Look for a global.
+        Type *type = (Type *)map_get(globalvars, node->name);
+        if (type) {
+            // Currently only supporting int type.
+            assert(type->ty == INT);
+            printf("  lea rax, dword ptr %s[rip]\n", node->name);
+            return;
+        }
+
+        fprintf(stderr, "An unknown identifier %s.\n", node->name);
+        exit(1);
     }
 
     case ND_UEXPR:
@@ -409,7 +420,7 @@ static void gen(Node *node, const Map *idents) {
     }
 }
 
-void gen_function(FuncDef *func) {
+void gen_function(Node *func) {
     stackpos = 0;
     printf("%s:\n", func->name);
     push("rbp");

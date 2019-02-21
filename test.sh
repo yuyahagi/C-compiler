@@ -162,6 +162,17 @@ try 1 'int main() { return 1 <= 10 == 10 >= 1; }'
 try 2 'int main() { int i; int j; i = j = 2+3*4 == 14; return i + j; }'
 try 0 'int main() { int i; int j; i = j = 2+3*4 != 14; return i + j; }'
 
+# Global variables.
+try 3 '
+int x;
+int set_x(int val) { x = val; }
+int main() { set_x(3); return x; }'
+try 3 '
+int x;
+int setlocal(int val) { int x; x = val; }
+int setglobal(int val) { x = val; }
+int main() { setglobal(3); setlocal(2); return x; }'
+
 # Functions.
 try 2 'int main() { return two(); }'
 try 6 'int main() { return 1 + (two)() + 3; }'

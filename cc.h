@@ -70,6 +70,7 @@ void tokenize(char *p);
 // Tokens defined as a single letter is expressed with its ASCII code.
 enum {
     ND_BLANK = 256, // Blank statement.
+    ND_FUNCDEF,
     ND_DECLARATION,
     ND_NUM,
     ND_IDENT,
@@ -99,12 +100,6 @@ typedef struct {
     int offset;
 } Ident;
 
-typedef struct {
-    char *name;
-    Vector *args;
-    struct Node *body;
-} FuncDef;
-
 typedef struct Node {
     int ty;             // Type of node.
     struct Node *lhs;
@@ -113,6 +108,7 @@ typedef struct Node {
     Type *type;         // For declarations and identifiers.
     char *name;         // For declarations and identifiers.
     Vector *args;       // For function calls.
+    struct Node *body;  // Function body (compound statement).
 
     Vector *stmts;      // Compound statement.
     Map *localvars;     // Local variables in a compound statement.
@@ -133,17 +129,19 @@ typedef struct Node {
 
 // A buffer to store parsed functions.
 extern Vector *funcdefs;
+extern Map *globalvars;
 
 Node *new_node_uop(int ty, Node *operand);
 Node *new_node_binop(int ty, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 Node *new_node_ident(const Token *tok, Type *type);
-FuncDef *new_funcdef(const Token *tok);
+Node *new_funcdef(const Token *tok);
 
 // Function to parse an expression to abstract syntax trees.
 void program(void);
-FuncDef *funcdef(void);
-Node *declaration(void);
+Node *funcdef(void);
+Node *extern_declaration(void);
+Node *declaration(Map *variables);
 Node *direct_declarator(Type *type);
 Node *compound(void);
 Node *statement(void);
@@ -163,4 +161,4 @@ Node *term(void);
 // =============================================================================
 // Assembly generation.
 // =============================================================================
-void gen_function(FuncDef *func);
+void gen_function(Node *func);

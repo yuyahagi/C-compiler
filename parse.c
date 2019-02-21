@@ -13,6 +13,7 @@ size_t pos = 0;
 // =============================================================================
 // Tokenization.
 // =============================================================================
+Map *globalvars = NULL;
 static Map *localvars = NULL;
 
 Type *deduce_type(Node *lhs, Node *rhs) {
@@ -72,7 +73,7 @@ Node *new_node_declaration(const Node* declarator, Type *type) {
     return node;
 }
 
-// If type is NULL, this will look its type from declarations.
+// If type is NULL, this will look up its type from declarations.
 Node *new_node_ident(const Token *tok, Type *type) {
     Node *node = calloc(1, sizeof(Node));
     node->ty = ND_IDENT;
@@ -81,15 +82,20 @@ Node *new_node_ident(const Token *tok, Type *type) {
     node->name = malloc(len + 1);
     strncpy(node->name, tok->input, len);
     node->name[len] = '\0';
-    if (type)
-        node->type = type;
-    else
-        node->type = (Type *)map_get(localvars, node->name);
+
+    // If type is not given from caller, look for local and global variables.
+    // If this is a function identifier externally defined,
+    // we may not know the return type at this time of development.
+    Type *t = type;
+    if (!t) t = (Type *)map_get(localvars, node->name);
+    if (!t) t = (Type *)map_get(globalvars, node->name);
+    node->type = t;
     return node;
 }
 
-FuncDef *new_funcdef(const Token *tok) {
-    FuncDef *func = calloc(1, sizeof(FuncDef));
+Node *new_funcdef(const Token *tok) {
+    Node *func = calloc(1, sizeof(Node));
+    func->ty = ND_FUNCDEF;
     size_t len = tok->len;
     func->name = malloc(len);
     strncpy(func->name, tok->input, len);
@@ -255,7 +261,7 @@ static void error(const char *msg, size_t i) {
 }
 
 // Parse an expression to an abstract syntax tree.
-// program: {funcdef}*
+// program: {funcdef}* | declaration
 // funcdef: ident "(" parameter-list ")" compound
 // compound: "{" {declaration}* {statement}* "}"
 // declaration: "int" {"*"}* direct_declarator
@@ -298,10 +304,35 @@ static Type *read_type(Type *inner) {
 
 void program(void) {
     funcdefs = new_vector();
+    globalvars = new_map();
     pos = 0;
     while (get_token(pos)->ty != TK_EOF) {
-        vec_push(funcdefs, (void *)funcdef());
+        Node *funcdef_or_globalvar = extern_declaration();
+        if (funcdef_or_globalvar->ty == ND_FUNCDEF)
+            vec_push(funcdefs, (void *)funcdef_or_globalvar);
     }
+}
+
+Node *extern_declaration() {
+    // In order to distinguish funcdefs and globals, we need to parse until an
+    // identifier and one token past ('(' then funcdef, global otherwise).
+    // We simply parse past the identifier, discard parse results, reset the
+    // token position, and simply parse again.
+    size_t pos0 = pos;
+
+    // Parse till identifier and discard.
+    Type *type = read_type(NULL);
+    if (get_token(pos)->ty != TK_IDENT)
+        error("A function definition expected but not found.\n", pos);
+    ++pos;
+    Token *tok_after_ident = get_token(pos);
+
+    // Reset token position and parse again.
+    pos = pos0;
+    if (tok_after_ident->ty == '(')
+        return funcdef();
+    else
+        return declaration(globalvars);
 }
 
 static Node *parse_func_param() {
@@ -313,7 +344,7 @@ static Node *parse_func_param() {
     return node;
 }
 
-FuncDef *funcdef(void) {
+Node *funcdef(void) {
     if (!consume(TK_TYPE_INT))
         error("Missing return type of a function definition.\n", pos);
 
@@ -324,9 +355,8 @@ FuncDef *funcdef(void) {
 
     // Prepare a new set of local variables.
     localvars = new_map();
-    FuncDef *func = new_funcdef(tok);
+    Node *func = new_funcdef(tok);
 
-    func->args = new_vector();
     if (!consume('('))
         error("'(' expected but not found.\n", pos);
     if (!consume(')')) {
@@ -341,13 +371,14 @@ FuncDef *funcdef(void) {
     return func;
 }
 
-Node *declaration(void) {
+Node *declaration(Map *variables) {
     // Read type before identifier, e.g., "int **".
     Type *type = read_type(NULL);
     // Declarator after identifier may alter the type.
     Node *declarator = direct_declarator(type);
     Node *node = new_node_declaration(declarator, declarator->type);
-    map_put(localvars, node->name, declarator->type);
+    map_put(variables, node->name, declarator->type);
+    expect(';');
     return node;
 }
 
@@ -386,7 +417,7 @@ Node *compound(void) {
     while (tok->ty != TK_EOF && tok->ty != '}') {
         Node *decl_or_stmt = NULL;
         if (tok->ty == TK_TYPE_INT)
-            decl_or_stmt = declaration();
+            decl_or_stmt = declaration(localvars);
         else
             decl_or_stmt = statement();
         vec_push(code, (void *)decl_or_stmt);
