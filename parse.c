@@ -321,7 +321,7 @@ Node *extern_declaration() {
     size_t pos0 = pos;
 
     // Parse till identifier and discard.
-    Type *type = read_type(NULL);
+    read_type(NULL);
     if (get_token(pos)->ty != TK_IDENT)
         error("A function definition expected but not found.\n", pos);
     ++pos;

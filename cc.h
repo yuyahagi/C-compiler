@@ -89,11 +89,14 @@ enum {
 
 struct Node;
 
+// Types.
 typedef struct Type {
     enum { INT, PTR, ARRAY } ty;
     struct Type *ptr_of;
     size_t array_len;
 } Type;
+
+size_t get_typesize(const Type* type);
 
 typedef struct {
     Type *type;

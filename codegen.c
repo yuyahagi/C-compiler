@@ -39,10 +39,9 @@ static int decls_to_offsets(const Vector *code, Map *idents, int starting_offset
             offset -= 8;
             break;
         case ARRAY:
-            // Currently only supports int arrays.
-            assert(node->type->ptr_of->ty == INT);
-            int intsize = 4;
-            offset -= intsize * node->type->array_len;
+            offset -=
+                get_typesize(node->type->ptr_of)
+                * node->type->array_len;
             // Align to 8 bytes (assuming offset <= 0);
             offset -= offset & 7;
             put_ident(idents, node->name, node->type, offset + 8);
@@ -127,8 +126,6 @@ static void gen_lval(Node *node, const Map *idents) {
         // Local variable not found. Look for a global.
         Type *type = (Type *)map_get(globalvars, node->name);
         if (type) {
-            // Currently only supporting int type.
-            assert(type->ty == INT);
             printf("  lea rax, dword ptr %s[rip]\n", node->name);
             return;
         }
@@ -174,15 +171,15 @@ static void gen_add(Node *node, const Map *idents) {
     // int or pointer arithmatic.
     gen(node->lhs, idents);
     if (rhs_is_ptr) {
-        int ptrsize = node->rhs->type->ptr_of->ty == INT ? 4 : 8;
-        printf("  mov rdi, %d\n", ptrsize);
+        size_t ptrsize = get_typesize(node->rhs->type->ptr_of);
+        printf("  mov rdi, %zu\n", ptrsize);
         printf("  mul rdi\n");
     }
     push("rax");
     gen(node->rhs, idents);
     if (lhs_is_ptr) {
-        int ptrsize = node->lhs->type->ptr_of->ty == INT ? 4 : 8;
-        printf("  mov rdi, %d\n", ptrsize);
+        size_t ptrsize = get_typesize(node->lhs->type->ptr_of);
+        printf("  mov rdi, %zu\n", ptrsize);
         printf("  mul rdi\n");
     }
     push("rax");

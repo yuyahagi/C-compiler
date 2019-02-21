@@ -25,12 +25,11 @@ int main(int argc, char **argv) {
     printf(".bss\n");
     for (int i = 0; i < globalvars->keys->len; i++) {
         char *name = (char *)globalvars->keys->data[i];
-        Ident *ident = (Ident *)globalvars->vals->data[i];
-        // TODO: Currently only assuming an int type. Adjust size according to type.
-        size_t siz = 4;
+        Type *type = (Type *)globalvars->vals->data[i];
+        size_t siz = get_typesize(type);
         printf(".global %s\n", name);
         printf("%s:\n", name);
-        printf("  .zero %d\n", siz);
+        printf("  .zero %zu\n", siz);
     }
 
     printf(".text\n");

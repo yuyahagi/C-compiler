@@ -172,6 +172,16 @@ int x;
 int setlocal(int val) { int x; x = val; }
 int setglobal(int val) { x = val; }
 int main() { setglobal(3); setlocal(2); return x; }'
+try 3 '
+int *p;
+int x;
+int main() { p = &x; x = 1; *p = *p + 2; return x; }'
+try 7 '
+int x[3];
+int main() { x[0] = 1; x[1] = 2; x[2] = 4; return x[0] + x[1] + x[2]; }'
+try 7 '
+int x[3];
+int main() { int *p; p = x; *p = 1; *(p+1) = 2; *(p+2) = 4; return x[0] + x[1] + x[2]; }'
 
 # Functions.
 try 2 'int main() { return two(); }'
