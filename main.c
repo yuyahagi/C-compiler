@@ -10,7 +10,8 @@ int main(int argc, char **argv) {
 
     // Test.
     if (strcmp(argv[1], "-test") == 0) {
-        runtest();
+        runtest_util();
+        runtest_type();
         return 0;
     }
 

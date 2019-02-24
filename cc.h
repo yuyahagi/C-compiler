@@ -13,7 +13,7 @@ typedef struct {
 
 Vector *new_vector();
 void vec_push(Vector *vec, void *elem);
-void runtest();
+void runtest_util();
 
 typedef struct {
     Vector *keys;
@@ -89,14 +89,21 @@ enum {
 
 struct Node;
 
+
+// =============================================================================
 // Types.
+// =============================================================================
+struct Node;
 typedef struct Type {
     enum { INT, PTR, ARRAY } ty;
     struct Type *ptr_of;
     size_t array_len;
 } Type;
 
-size_t get_typesize(const Type* type);
+size_t get_typesize(const Type *type);
+Type *deduce_type(struct Node *lhs, struct Node *rhs);
+void runtest_type(void);
+
 
 typedef struct {
     Type *type;

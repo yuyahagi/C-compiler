@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include "cc.h"
@@ -16,3 +17,10 @@ size_t get_typesize(const Type *type) {
         exit(1);
     }
 }
+
+Type *deduce_type(Node *lhs, Node *rhs) {
+    if (lhs)
+        return lhs->type;
+    return NULL;
+}
+

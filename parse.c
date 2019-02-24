@@ -16,12 +16,6 @@ size_t pos = 0;
 Map *globalvars = NULL;
 static Map *localvars = NULL;
 
-Type *deduce_type(Node *lhs, Node *rhs) {
-    if (lhs)
-        return lhs->type;
-    return NULL;
-}
-
 Node *new_node_uop(int operator, Node *operand) {
     assert(operator == '*' || operator == '&');
     Node *node = calloc(1, sizeof(Node));

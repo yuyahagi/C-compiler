@@ -53,7 +53,7 @@ void map_test() {
     fprintf(stderr, "Map test OK\n");
 }
 
-void runtest() {
+void runtest_util() {
     vector_test();
     map_test();
 }
