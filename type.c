@@ -18,9 +18,39 @@ size_t get_typesize(const Type *type) {
     }
 }
 
-Type *deduce_type(Node *lhs, Node *rhs) {
-    if (lhs)
+Type *deduce_type(int operator, Node *lhs, Node *rhs) {
+    // If one of the side has an unknown type, return the type of the other side.
+    // This is necessary primarily because we don't check function signatures at
+    // this point of development. This is to be removed later when we hvae proper
+    // signature check in place.
+    if (!lhs || !lhs->type)
+        return rhs->type;
+    if (!rhs || !rhs->type)
         return lhs->type;
-    return NULL;
+
+    // If both sides have the same type, return it.
+    if (lhs->type->ty == rhs->type->ty) {
+        // TODO: A pointer of (or an array of) different types may be reported as
+        // the same type. To be fixed when it becomes necessary.
+        return lhs->type;
+    }
+
+    // Operator-specific type deductions.
+    switch (operator) {
+    case '=':
+        // Assignment expression. Return type of lhs.
+        return lhs->type;
+
+    case '+':
+    case '-':
+        // Pointer addition/subtraction with an integer.
+        // Pointer +/- integer makes a pointer.
+        if (lhs->type->ty == PTR && rhs->type->ty == INT)
+            return lhs->type;
+        if (lhs->type->ty == INT && rhs->type->ty == PTR)
+            return rhs->type;
+    }
+
+    return lhs->type;
 }
 

@@ -54,9 +54,9 @@ static void type_getsize_test() {
     Type ty_arint = (Type) { .ty = ARRAY, .ptr_of = &ty_int, .array_len = 3 };
     expect(__LINE__, 12, get_typesize(&ty_arint));
 
-    //// Array of pointers.
-    //Type ty_arpint = (Type) { .ty = ARRAY, .ptr_of = &ty_pint, .array_len = 3 };
-    //expect(__LINE__, 24, get_typesize(&ty_arint));
+    // Array of pointers.
+    Type ty_arpint = (Type) { .ty = ARRAY, .ptr_of = &ty_pint, .array_len = 3 };
+    expect(__LINE__, 24, get_typesize(&ty_arpint));
 
     fprintf(stderr, "Type size test OK\n");
 }
@@ -65,39 +65,71 @@ static void type_deduction_test() {
     // Types.
     Type ty_int = (Type) { .ty = INT, .ptr_of = NULL, .array_len = 0 };
     Type ty_pint = (Type) { .ty = PTR, .ptr_of = &ty_int, .array_len = 0 };
+    Type ty_ppint = (Type) { .ty = PTR, .ptr_of = &ty_pint, .array_len = 0 };
 
     Node *lhs = calloc(1, sizeof(Node));
     Node *rhs = calloc(1, sizeof(Node));
 
+    // For non-operator-specific type deduction,
+    // we specify a dummy operator '_' here.
+    // When the type of one side is unknown, expect the type of the known side.
+    // NOTE: This behavior should probably be removed later in the development.
     lhs->type = NULL;
     rhs->type = &ty_int;
     expect_type(__LINE__,
-            NULL,
-            deduce_type(lhs, rhs));
+            &ty_int,
+            deduce_type('_', lhs, rhs));
 
     lhs->type = &ty_int;
     rhs->type = NULL;
     expect_type(__LINE__,
-            NULL,
-            deduce_type(lhs, rhs));
+            &ty_int,
+            deduce_type('_', lhs, rhs));
 
+    // When both sides have the same type.
     lhs->type = &ty_int;
     rhs->type = &ty_int;
     expect_type(__LINE__,
             &ty_int,
-            deduce_type(lhs, rhs));
+            deduce_type('_', lhs, rhs));
+
+    lhs->type = &ty_pint;
+    rhs->type = &ty_pint;
+    expect_type(__LINE__,
+            &ty_pint,
+            deduce_type('_', lhs, rhs));
+
+    lhs->type = &ty_ppint;
+    rhs->type = &ty_ppint;
+    expect_type(__LINE__,
+            &ty_ppint,
+            deduce_type('_', lhs, rhs));
+
+    // Assignment expression. The type is that of the lhs.
+    lhs->type = &ty_int;
+    rhs->type = &ty_pint;
+    expect_type(__LINE__,
+            &ty_int,
+            deduce_type('=', lhs, rhs));
 
     lhs->type = &ty_pint;
     rhs->type = &ty_int;
     expect_type(__LINE__,
             &ty_pint,
-            deduce_type(lhs, rhs));
+            deduce_type('=', lhs, rhs));
+
+    // Pointer arithmatics. Pointer +/- integer makes another poitner.
+    lhs->type = &ty_pint;
+    rhs->type = &ty_int;
+    expect_type(__LINE__,
+            &ty_pint,
+            deduce_type('+', lhs, rhs));
 
     lhs->type = &ty_int;
     rhs->type = &ty_pint;
     expect_type(__LINE__,
             &ty_pint,
-            deduce_type(lhs, rhs));
+            deduce_type('-', lhs, rhs));
 
     fprintf(stderr, "Type deduction test OK\n");
 }

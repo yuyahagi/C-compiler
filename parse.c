@@ -16,6 +16,12 @@ size_t pos = 0;
 Map *globalvars = NULL;
 static Map *localvars = NULL;
 
+Node *new_node(int ty) {
+    Node *node = calloc(1, sizeof(Node));
+    node->ty = ty;
+    return node;
+}
+
 Node *new_node_uop(int operator, Node *operand) {
     assert(operator == '*' || operator == '&');
     Node *node = calloc(1, sizeof(Node));
@@ -43,7 +49,7 @@ Node *new_node_binop(int ty, Node *lhs, Node *rhs) {
     node->ty = ty;
     node->lhs = lhs;
     node->rhs = rhs;
-    node->type = deduce_type(lhs, rhs);
+    node->type = deduce_type(ty, lhs, rhs);
     return node;
 }
 
@@ -420,7 +426,7 @@ Node *compound(void) {
     if (!consume('}'))
         error("A compound statement not terminated with '}'.", pos);
 
-    Node *comp_stmt = new_node_binop(ND_COMPOUND, NULL, NULL);
+    Node *comp_stmt = new_node(ND_COMPOUND);
     comp_stmt->stmts = code;
     comp_stmt->localvars = localvars;
     return comp_stmt;
@@ -432,7 +438,7 @@ Node *statement(void) {
     switch(tok->ty) {
     case ';':
         // Empty statement.
-        node = new_node_binop(ND_BLANK, NULL, NULL);
+        node = new_node(ND_BLANK);
         break;
     case '{':
         // Compound statement.
@@ -458,7 +464,8 @@ Node *statement(void) {
             rhs = new_node_num(0);
         else
             rhs = assign();
-        node = new_node_binop(ND_RETURN, NULL, rhs);
+        node = new_node(ND_RETURN);
+        node->rhs = rhs;
         break;
     default:
         node = assign();
@@ -477,7 +484,7 @@ Node *assign(void) {
 }
 
 Node *selection(void) {
-    Node *node = new_node_binop(ND_IF, NULL, NULL);
+    Node *node = new_node(ND_IF);
     expect('(');
     node->cond = assign();
     expect(')');
@@ -489,7 +496,7 @@ Node *selection(void) {
 }
 
 Node *iteration_while(void) {
-    Node *node = new_node_binop(ND_WHILE, NULL, NULL);
+    Node *node = new_node(ND_WHILE);
     expect('(');
     node->cond = assign();
     expect(')');
@@ -498,22 +505,22 @@ Node *iteration_while(void) {
 }
 
 Node *iteration_for(void) {
-    Node *node = new_node_binop(ND_FOR, NULL, NULL);
+    Node *node = new_node(ND_FOR);
     expect('(');
     if (get_token(pos)->ty != ';')
         node->init = assign();
     else
-        node->init = new_node_binop(ND_BLANK, NULL, NULL);
+        node->init = new_node(ND_BLANK);
     expect(';');
     if (get_token(pos)->ty != ';')
         node->cond = assign();
     else
-        node->cond = new_node_binop(ND_BLANK, NULL, NULL);
+        node->cond = new_node(ND_BLANK);
     expect(';');
     if (get_token(pos)->ty != ')')
         node->step = assign();
     else
-        node->step = new_node_binop(ND_BLANK, NULL, NULL);
+        node->step = new_node(ND_BLANK);
     expect(')');
     node->then = statement();
     return node;

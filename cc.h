@@ -101,7 +101,7 @@ typedef struct Type {
 } Type;
 
 size_t get_typesize(const Type *type);
-Type *deduce_type(struct Node *lhs, struct Node *rhs);
+Type *deduce_type(int operator, struct Node *lhs, struct Node *rhs);
 void runtest_type(void);
 
 
@@ -141,6 +141,7 @@ typedef struct Node {
 extern Vector *funcdefs;
 extern Map *globalvars;
 
+Node *new_node(int ty);
 Node *new_node_uop(int ty, Node *operand);
 Node *new_node_binop(int ty, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
