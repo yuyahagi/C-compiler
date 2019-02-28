@@ -137,6 +137,8 @@ try 7 'int main() { int ar[3]; *ar=1; *(ar+1) = 2; *(ar+2) = 4; return *ar + *(a
 try 7 'int main() { int ar[3]; *ar = 1; *(ar+1) = 2; *(ar+2) = 4; return ar[0] + ar[1] + ar[2]; }'
 try 7 'int main() { int ar[3]; ar[0] = 1; ar[1] = 2; ar[2] = 4; return *ar + *(ar+1) + *(ar+2); }'
 try 2 'int main() { int ar[3]; int i; i = 1; ar[i] = 2; return ar[i]; }'
+try 2 'int main() { int ar[2]; ar[1] = 2; ar[0] = 1; return ar[1]; }'
+try 7 'int main() { int ar[3]; ar[2] = 4; ar[1] = 2; ar[0] = 1; return ar[0] + ar[1] + ar[2]; }'
 
 # Relations.
 try 0 'int main() { return 2 == 2+1; }'
@@ -182,6 +184,10 @@ int main() { x[0] = 1; x[1] = 2; x[2] = 4; return x[0] + x[1] + x[2]; }'
 try 7 '
 int x[3];
 int main() { int *p; p = x; *p = 1; *(p+1) = 2; *(p+2) = 4; return x[0] + x[1] + x[2]; }'
+try 15 '
+int x[3];
+int y;
+int main() { y = 8; x[2] = 4; x[1] = 2; x[0] = 1; return x[0] + x[1] + x[2] + y; }'
 
 # Functions.
 try 2 'int main() { return two(); }'

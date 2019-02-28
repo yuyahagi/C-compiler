@@ -106,6 +106,35 @@ static void pop(const char *reg) {
     assert(stackpos >= 0);
 }
 
+static void gen_typed_rax_dereference(const Type *type) {
+    switch(get_typesize(type)) {
+    case 4:
+        printf("  mov eax, dword ptr [rax]\n");
+        return;
+    case 8:
+        printf("  mov rax, qword ptr [rax]\n");
+        return;
+    default:
+        fprintf(stderr, "An unsupported type size %d.\n", get_typesize(type));
+        exit(1);
+    }
+}
+
+static void gen_typed_cmp_rax_to_0(const Type *type) {
+    size_t siz = get_typesize(type);
+    switch (siz) {
+    case 4:
+        printf("  cmp eax, 0\n");
+        return;
+    case 8:
+        printf("  cmp rax, 0\n");
+        return;
+    default:
+        fprintf(stderr, "An unpredicted type size %zu.\n", siz);
+        exit(1);
+    }
+}
+
 static void gen_lval(Node* node, const Map *idents);
 static void gen_add(Node *node, const Map *idents);
 static void gen(Node *node, const Map *idents);
@@ -208,8 +237,9 @@ static void gen(Node *node, const Map *idents) {
         gen_lval(node, idents);
         // If the identifier is an array, we take its address as its value.
         // Otherwise, we take the value at its address.
-        if (node->type->ty != ARRAY)
-            printf("  mov rax, [rax]\n");
+        if (node->type->ty != ARRAY) {
+            gen_typed_rax_dereference(node->type);
+        }
         return;
 
     case ND_UEXPR:
@@ -219,7 +249,7 @@ static void gen(Node *node, const Map *idents) {
             break;
         case '*':
             gen_lval(node, idents);
-            printf("  mov rax, [rax]\n");
+            gen_typed_rax_dereference(node->type);
             break;
         default:
             fprintf(stderr, "Unknown unary operator %c.\n", node->uop);
@@ -273,8 +303,6 @@ static void gen(Node *node, const Map *idents) {
     case ND_COMPOUND:
     {
         for (int i = 0; i < node->stmts->len; i++) {
-            // The value of the entire expression is at the top of the stack.
-            // Pop it to keep the correct counting.
             Node *currentNode = (Node *)node->stmts->data[i];
             gen(currentNode, idents);
         }
@@ -287,7 +315,7 @@ static void gen(Node *node, const Map *idents) {
         int lbl_last = nlabel++;
 
         gen(node->cond, idents);
-        printf("  cmp rax, 0\n");
+        gen_typed_cmp_rax_to_0(node->cond->type);
         printf("  je .L%d\n", lbl_else);
 
         gen(node->then, idents);
@@ -309,7 +337,7 @@ static void gen(Node *node, const Map *idents) {
         printf(".L%d:\n", lbl_beg);
         // Condition check.
         gen(node->cond, idents);
-        printf("  cmp rax, 0\n");
+        gen_typed_cmp_rax_to_0(node->cond->type);
         printf("  je .L%d\n", lbl_end);
 
         gen(node->then, idents);
@@ -328,7 +356,7 @@ static void gen(Node *node, const Map *idents) {
         printf(".L%d:\n", lbl_beg);
 
         gen(node->cond, idents);
-        printf("  cmp rax, 0\n");
+        gen_typed_cmp_rax_to_0(node->cond->type);
         printf("  je .L%d\n", lbl_end);
 
         gen(node->then, idents);
@@ -354,8 +382,18 @@ static void gen(Node *node, const Map *idents) {
         gen(node->rhs, idents);
 
         pop("rdi");
-        printf("  mov [rdi], rax\n");
-        return;
+        size_t siz = get_typesize(node->lhs->type);
+        switch (siz) {
+        case 4:
+            printf("  mov dword ptr [rdi], eax\n");
+            return;
+        case 8:
+            printf("  mov [rdi], rax\n");
+            return;
+        default:
+            fprintf(stderr, "An unpredicted type size %zu.\n", siz);
+            exit(1);
+        }
 
     case '+':
     case '-':   // Fall through.
@@ -381,32 +419,32 @@ static void gen(Node *node, const Map *idents) {
         printf("  div rdi\n");
         break;
     case '<':
-        printf("  cmp rax, rdi\n");
+        printf("  cmp eax, edi\n");
         printf("  setl al\n");
         printf("  movzb rax, al\n");
         break;
     case '>':
-        printf("  cmp rax, rdi\n");
+        printf("  cmp eax, edi\n");
         printf("  setg al\n");
         printf("  movzb rax, al\n");
         break;
     case ND_LESSEQUAL:
-        printf("  cmp rax, rdi\n");
+        printf("  cmp eax, edi\n");
         printf("  setle al\n");
         printf("  movzb rax, al\n");
         break;
     case ND_GREATEREQUAL:
-        printf("  cmp rax, rdi\n");
+        printf("  cmp eax, edi\n");
         printf("  setge al\n");
         printf("  movzb rax, al\n");
         break;
     case ND_EQUAL:
-        printf("  cmp rax, rdi\n");
+        printf("  cmp eax, edi\n");
         printf("  sete al\n");
         printf("  movzb rax, al\n");
         break;
     case ND_NOTEQUAL:
-        printf("  cmp rax, rdi\n");
+        printf("  cmp eax, edi\n");
         printf("  setne al\n");
         printf("  movzb rax, al\n");
         break;
