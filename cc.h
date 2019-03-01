@@ -1,4 +1,5 @@
 #pragma once
+#include <stdbool.h>
 #include <stdlib.h>
 #include "cc.h"
 
@@ -102,6 +103,7 @@ typedef struct Type {
 } Type;
 
 size_t get_typesize(const Type *type);
+bool is_basic_type(const Type *type);
 Type *deduce_type(int operator, struct Node *lhs, struct Node *rhs);
 void runtest_type(void);
 

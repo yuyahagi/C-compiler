@@ -58,13 +58,12 @@ try 5 'int main() { return 1+60/12-1; }'
 try 20 'int main() { return (2+3)*4; }'
 try 7 'int main() { 1; 2; return 3+4; }'
 
-# Local variables.
+# Int local variables.
 try 3 'int main() { int a; a=1; return a+2; }'
 try 3 'int main() { int x; x = 1; x = x + 2; return x; }'
 try 4 'int main() { int _long_variable_1_; _long_variable_1_ = 2; return _long_variable_1_ * 2; }'
 try 5 'int main() { int foo; int bar; int baz; foo=1; bar=baz=foo+1; return foo+bar*baz; }'
 try 1 'int main() { int foo; foo = 0; return (foo = foo + 3) == 3; }'
-try 3 'int main() { char c; c = 1; return c+2; }'
 
 # Pointers.
 try 3 'int main() { int x; int *p; p = &x; x = 3; return *p; }'
@@ -135,6 +134,37 @@ try 2 'int main() { int ar[3]; int i; i = 1; ar[i] = 2; return ar[i]; }'
 try 2 'int main() { int ar[2]; ar[1] = 2; ar[0] = 1; return ar[1]; }'
 try 7 'int main() { int ar[3]; ar[2] = 4; ar[1] = 2; ar[0] = 1; return ar[0] + ar[1] + ar[2]; }'
 
+# Other integer types.
+try 3 'int main() { char c; c = 0-5; return c+8; }'
+try 3 'int main() { char c; char *p; p = &c; c = 3; return *p; }'
+try 0 '
+int main() {
+    char arc[4];
+    arc[3] = 4; arc[2] = 3; arc[1] = 2; arc[0] = 1;
+    int *pi;
+    pi = arc;
+    return *pi - (4*256*256*256 + 3*256*256 + 2*256 + 1);
+}'
+try 4 '
+int main() {
+    int i;
+    i = 8*256*256*256 + 4*256*256 + 2*256 + 1;
+    char *p;
+    p = &i;
+    return *(2 + p);
+}'
+try 11 '
+int main() {
+    int i;
+    i = 8*256*256*256 + 4*256*256 + 2*256 + 1;
+    char *p;
+    p = &i;
+    char *q;
+    q = p + 1;
+    *(p + 1) = 3;
+    return *q + p[3];
+}'
+
 # Relations.
 try 0 'int main() { return 2 == 2+1; }'
 try 1 'int main() { return 2 != 2+1; }'
@@ -183,6 +213,13 @@ try 15 '
 int x[3];
 int y;
 int main() { y = 8; x[2] = 4; x[1] = 2; x[0] = 1; return x[0] + x[1] + x[2] + y; }'
+try 0 '
+char arc[3];
+int main() {
+    arc[2] = 4; arc[1] = 2; arc[0] = 1;
+    int *pi; pi = &arc;
+    return *pi - (4*256*256 + 2*256 + 1);
+}'
 
 # Functions.
 try 2 'int main() { return two(); }'

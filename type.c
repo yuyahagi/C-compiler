@@ -20,6 +20,10 @@ size_t get_typesize(const Type *type) {
     }
 }
 
+bool is_basic_type(const Type *type) {
+    return type->ty == CHAR || type->ty == INT;
+}
+
 Type *deduce_type(int operator, Node *lhs, Node *rhs) {
     // If one of the side has an unknown type, return the type of the other side.
     // This is necessary primarily because we don't check function signatures at
@@ -47,9 +51,9 @@ Type *deduce_type(int operator, Node *lhs, Node *rhs) {
     case '-':
         // Pointer addition/subtraction with an integer.
         // Pointer +/- integer makes a pointer.
-        if (lhs->type->ty == PTR && rhs->type->ty == INT)
+        if (lhs->type->ty == PTR && is_basic_type(rhs->type))
             return lhs->type;
-        if (lhs->type->ty == INT && rhs->type->ty == PTR)
+        if (is_basic_type(lhs->type) && rhs->type->ty == PTR)
             return rhs->type;
     }
 

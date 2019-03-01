@@ -201,7 +201,7 @@ static void gen_add(Node *node, const Map *idents) {
         exit(1);
     }
 
-    // int or pointer arithmatic.
+    // Integer type or pointer arithmatic.
     gen(node->lhs, idents);
     if (rhs_is_ptr) {
         size_t ptrsize = get_typesize(node->rhs->type->ptr_of);

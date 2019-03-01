@@ -37,6 +37,25 @@ static void expect_type(int line, const Type *expected, const Type *actual) {
     exit(1);
 }
 
+static void type_is_basic_type_test() {
+    Type ty_char = (Type) { .ty = CHAR, .ptr_of = NULL, .array_len = 0 };
+    Type ty_int = (Type) { .ty = INT, .ptr_of = NULL, .array_len = 0 };
+    Type ty_pchar = (Type) { .ty = PTR, .ptr_of = &ty_char, .array_len = 0 };
+    Type ty_pint = (Type) { .ty = PTR, .ptr_of = &ty_int, .array_len = 0 };
+    Type ty_ppint = (Type) { .ty = PTR, .ptr_of = &ty_pint, .array_len = 0 };
+    Type ty_archar = (Type) { .ty = ARRAY, .ptr_of = &ty_char, .array_len = 3 };
+    Type ty_arint = (Type) { .ty = ARRAY, .ptr_of = &ty_int, .array_len = 3 };
+
+    expect(__LINE__, 1, is_basic_type(&ty_char));
+    expect(__LINE__, 1, is_basic_type(&ty_int));
+    expect(__LINE__, 0, is_basic_type(&ty_pchar));
+    expect(__LINE__, 0, is_basic_type(&ty_pint));
+    expect(__LINE__, 0, is_basic_type(&ty_archar));
+    expect(__LINE__, 0, is_basic_type(&ty_arint));
+
+    fprintf(stderr, "Type basic type test OK\n");
+}
+
 static void type_getsize_test() {
     // Basic types.
     Type ty_char = (Type) { .ty = CHAR, .ptr_of = NULL, .array_len = 0 };
@@ -75,7 +94,9 @@ static void type_getsize_test() {
 
 static void type_deduction_test() {
     // Types.
+    Type ty_char = (Type) { .ty = CHAR, .ptr_of = NULL, .array_len = 0 };
     Type ty_int = (Type) { .ty = INT, .ptr_of = NULL, .array_len = 0 };
+    Type ty_pchar = (Type) { .ty = PTR, .ptr_of = &ty_char, .array_len = 0 };
     Type ty_pint = (Type) { .ty = PTR, .ptr_of = &ty_int, .array_len = 0 };
     Type ty_ppint = (Type) { .ty = PTR, .ptr_of = &ty_pint, .array_len = 0 };
 
@@ -87,9 +108,9 @@ static void type_deduction_test() {
     // When the type of one side is unknown, expect the type of the known side.
     // NOTE: This behavior should probably be removed later in the development.
     lhs->type = NULL;
-    rhs->type = &ty_int;
+    rhs->type = &ty_char;
     expect_type(__LINE__,
-            &ty_int,
+            &ty_char,
             deduce_type('_', lhs, rhs));
 
     lhs->type = &ty_int;
@@ -99,10 +120,22 @@ static void type_deduction_test() {
             deduce_type('_', lhs, rhs));
 
     // When both sides have the same type.
+    lhs->type = &ty_char;
+    rhs->type = &ty_char;
+    expect_type(__LINE__,
+            &ty_char,
+            deduce_type('_', lhs, rhs));
+
     lhs->type = &ty_int;
     rhs->type = &ty_int;
     expect_type(__LINE__,
             &ty_int,
+            deduce_type('_', lhs, rhs));
+
+    lhs->type = &ty_pchar;
+    rhs->type = &ty_pchar;
+    expect_type(__LINE__,
+            &ty_pchar,
             deduce_type('_', lhs, rhs));
 
     lhs->type = &ty_pint;
@@ -119,6 +152,18 @@ static void type_deduction_test() {
 
     // Assignment expression. The type is that of the lhs.
     lhs->type = &ty_int;
+    rhs->type = &ty_pchar;
+    expect_type(__LINE__,
+            &ty_int,
+            deduce_type('=', lhs, rhs));
+
+    lhs->type = &ty_pchar;
+    rhs->type = &ty_int;
+    expect_type(__LINE__,
+            &ty_pchar,
+            deduce_type('=', lhs, rhs));
+
+    lhs->type = &ty_int;
     rhs->type = &ty_pint;
     expect_type(__LINE__,
             &ty_int,
@@ -131,6 +176,18 @@ static void type_deduction_test() {
             deduce_type('=', lhs, rhs));
 
     // Pointer arithmatics. Pointer +/- integer makes another poitner.
+    lhs->type = &ty_pchar;
+    rhs->type = &ty_int;
+    expect_type(__LINE__,
+            &ty_pchar,
+            deduce_type('+', lhs, rhs));
+
+    lhs->type = &ty_char;
+    rhs->type = &ty_pchar;
+    expect_type(__LINE__,
+            &ty_pchar,
+            deduce_type('-', lhs, rhs));
+
     lhs->type = &ty_pint;
     rhs->type = &ty_int;
     expect_type(__LINE__,
@@ -147,6 +204,7 @@ static void type_deduction_test() {
 }
 
 void runtest_type() {
+    type_is_basic_type_test();
     type_getsize_test();
     type_deduction_test();
 }
