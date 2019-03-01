@@ -5,6 +5,8 @@
 
 size_t get_typesize(const Type *type) {
     switch (type->ty) {
+    case CHAR:
+        return 1;
     case INT:
         return 4;
     case PTR:

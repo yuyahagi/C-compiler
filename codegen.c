@@ -33,6 +33,7 @@ static int decls_to_offsets(const Vector *code, Map *idents, int starting_offset
             continue;
 
         switch (node->type->ty) {
+        case CHAR:
         case INT:
         case PTR:
             put_ident(idents, node->name, node->type, offset);
@@ -108,6 +109,9 @@ static void pop(const char *reg) {
 
 static void gen_typed_rax_dereference(const Type *type) {
     switch(get_typesize(type)) {
+    case 1:
+        printf("  movzx eax, byte ptr [rax]\n");
+        return;
     case 4:
         printf("  mov eax, dword ptr [rax]\n");
         return;
@@ -384,6 +388,9 @@ static void gen(Node *node, const Map *idents) {
         pop("rdi");
         size_t siz = get_typesize(node->lhs->type);
         switch (siz) {
+        case 1:
+            printf("  mov byte ptr [rdi], al\n");
+            return;
         case 4:
             printf("  mov dword ptr [rdi], eax\n");
             return;

@@ -17,7 +17,7 @@ try() {
     fi
 }
 
-# Prepare a nullary function.
+# Prepare external functions.
 echo '
 #include <stdlib.h>
 int two() { return 2; }
@@ -64,6 +64,7 @@ try 3 'int main() { int x; x = 1; x = x + 2; return x; }'
 try 4 'int main() { int _long_variable_1_; _long_variable_1_ = 2; return _long_variable_1_ * 2; }'
 try 5 'int main() { int foo; int bar; int baz; foo=1; bar=baz=foo+1; return foo+bar*baz; }'
 try 1 'int main() { int foo; foo = 0; return (foo = foo + 3) == 3; }'
+try 3 'int main() { char c; c = 1; return c+2; }'
 
 # Pointers.
 try 3 'int main() { int x; int *p; p = &x; x = 3; return *p; }'
@@ -72,7 +73,6 @@ try 3 'int main() { int x; int *p; int **pp; pp = &p; p = &x; x = 3; return **pp
 try 3 'int main() { int x; int *p; int **pp; pp = &p; p = &x; **pp = 3; return x; }'
 try 3 'int main() { int x; int y; int *p; x = 2; p = &x; y = *p + 1; p = &y; return *p; }'
 try 3 'int main() { int x; int *p; p = &x; *p = 2; *p = 2**p-1; return x; }'
-
 try 4 '
 int main() {
     int *p;
@@ -81,14 +81,12 @@ int main() {
     q = p + 2;
     return *q;
 }'
-
 try 4 '
 int main() {
     int *p;
     alloc4(&p, 1, 2, 4, 8);
     return *(2 + p);
 }'
-
 try 3 '
 int main() {
     int *p;
@@ -98,7 +96,6 @@ int main() {
     *(p + 1) = 3;
     return *q;
 }'
-
 try 2 '
 int main() {
     int *p;
@@ -109,7 +106,6 @@ int main() {
     q = two() + p - offset;
     return *q;
 }'
-
 try 2 '
 int main() {
     int *p;
@@ -118,7 +114,6 @@ int main() {
     offset = 1;
     return *(two() + p - offset);
 }'
-
 try 4 '
 int main() {
     int **pp;
@@ -203,17 +198,14 @@ try 7 'int foo() { return 3; } int bar() { return 4; } int main() { return foo()
 try 5 'int foo() { return two()+1; } int main() { return foo() + two(); }'
 try 43 'int foo() { return 3; } int bar() { return 4; } int main() { return func2(foo(), bar()); }'
 try 3 'int foo(int x0, int x1) { return x0 + x1; } int main() { return foo(1, 2); }'
-
 try 1 '
 int foo(int x0, int x1, int x2, int x3, int x4, int x5) {
     return x0 + 10*x1 + 100*x2 + 1000*x3 + 10000*x4 + 100000*x5;
 }
 int main() { return foo(1, 2, 3, 4, 5, 6) == 654321; }'
-
 try 14 '
 int foo(int x) { int a; a = 3; return a * x; }
 int main() { int b; b = 2; return foo(4) + b; }'
-
 try 1 '
 int foo(int x0, int x1, int x2, int x3, int x4, int x5, int x6, int x7) {
     return x0 + 10*x1 + 100*x2 + 1000*x3 + 10000*x4 + 100000*x5 + 1000000*x6 + 10000000*x7;
@@ -228,13 +220,10 @@ try 1 'int main() { if (1) return 1; return 0; }'
 try 0 'int main() { if (0) return 1; else return 0; return 127; }'
 try 0 'int main() { int x; int y; x = 3; if (x + 1 != 2 * 2) y = 1; else y = 0; if (y) return 1; else return 0; }'
 try 1 'int main() { int x; int y; x = 3; if (x + 1 == 2 * 2) y = 1; else y = 0; if (y) return 1; else return 0; }'
-
 try 15 '
 int add_upto(int x) { if (x == 1) return x; else return x + add_upto(x-1); }
 int main() { return add_upto(5); }'
-
 try 2 'int main() { int x; x = 0; if (1) { x = 1; x = x * 2; } return x; }'
-
 try 2 '
 int main() {
     int x;
@@ -248,7 +237,6 @@ int main() {
     }
     return x;
 }'
-
 try 1 '
 int foo(int x) {
     if (x == 2) return 1;
@@ -257,7 +245,6 @@ int foo(int x) {
 }
 int main() { return  foo(3); }
 '
-
 try 13 '
 int fib(int x) {
     if (x == 2) return 1;

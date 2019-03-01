@@ -147,6 +147,10 @@ void tokenize(char *p) {
                 push_token(TK_TYPE_INT, p0, 0, len);
                 continue;
             }
+            if (strncmp(p0, "char", max(len, 4)) == 0) {
+                push_token(TK_TYPE_CHAR, p0, 0, len);
+                continue;
+            }
             if (strncmp(p0, "return", max(len, 6)) == 0) {
                 push_token(TK_RETURN, p0, 0, len);
                 continue;
@@ -284,9 +288,20 @@ static void error(const char *msg, size_t i) {
 // term: num | "(" assign ")"
 static Type *read_type(Type *inner) {
     if (!inner) {
-        expect(TK_TYPE_INT);
+        Token *tok = get_token(pos++);
+        if (tok->ty != TK_TYPE_INT && tok->ty != TK_TYPE_CHAR) {
+            fprintf(stderr, "A type specifier of int or char was expected but got token %d.\n", tok->ty);
+            exit(1);
+        }
         inner = calloc(1, sizeof(Type));
-        inner->ty = INT;
+        switch (tok->ty) {
+        case TK_TYPE_INT:
+            inner->ty = INT;
+            break;
+        case TK_TYPE_CHAR:
+            inner->ty = CHAR;
+            break;
+        }
         inner->ptr_of = NULL;
     }
 
@@ -416,7 +431,7 @@ Node *compound(void) {
     Token *tok = get_token(pos);
     while (tok->ty != TK_EOF && tok->ty != '}') {
         Node *decl_or_stmt = NULL;
-        if (tok->ty == TK_TYPE_INT)
+        if (tok->ty == TK_TYPE_INT || tok->ty == TK_TYPE_CHAR)
             decl_or_stmt = declaration(localvars);
         else
             decl_or_stmt = statement();

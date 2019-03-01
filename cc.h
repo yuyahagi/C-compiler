@@ -34,7 +34,8 @@ int max(int x0, int x1);
 // Tokens defined as a single letter is directly expressed as its ASCII code.
 enum {
     TK_NUM = 256,   // Represents a number.
-    TK_TYPE_INT,    // Type specifier, int
+    TK_TYPE_CHAR,   // Type specifier
+    TK_TYPE_INT,
     TK_IDENT,       // Represents an identifier.
     TK_LESSEQUAL,   // "<=".
     TK_GREATEREQUAL,// ">=".
@@ -95,7 +96,7 @@ struct Node;
 // =============================================================================
 struct Node;
 typedef struct Type {
-    enum { INT, PTR, ARRAY } ty;
+    enum { CHAR, INT, PTR, ARRAY } ty;
     struct Type *ptr_of;
     size_t array_len;
 } Type;
