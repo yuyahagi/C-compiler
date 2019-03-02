@@ -137,6 +137,8 @@ try 7 'int main() { int ar[3]; ar[2] = 4; ar[1] = 2; ar[0] = 1; return ar[0] + a
 # Other integer types.
 try 3 'int main() { char c; c = 0-5; return c+8; }'
 try 3 'int main() { char c; char *p; p = &c; c = 3; return *p; }'
+try 255 'int main() { char c; c = 0; c = c - 1; return c; }'
+try 0 'int main() { char c; c = 255; c = c + 1; return c; }'
 try 0 '
 int main() {
     char arc[4];
@@ -161,8 +163,22 @@ int main() {
     p = &i;
     char *q;
     q = p + 1;
-    *(p + 1) = 3;
+    *(two() + p - 1) = 3;
     return *q + p[3];
+}'
+try 12 '
+int main() {
+    int i[3];
+    i[0] = 8*256*256*256 + 4*256*256 + 2*256 + 1;
+    i[1] = 0;
+    i[2] = 3 * i[0];
+    char *p[2];
+    p[0] = &i;
+    p[1] = &i[2];
+    char **pp;
+    pp = &p;
+    pp = pp + 1;
+    return (*pp)[2];
 }'
 
 # Relations.
@@ -188,6 +204,9 @@ try 0 'int main() { return 1 <= 10 != 10 >= 1; }'
 try 1 'int main() { return 1 <= 10 == 10 >= 1; }'
 try 2 'int main() { int i; int j; i = j = 2+3*4 == 14; return i + j; }'
 try 0 'int main() { int i; int j; i = j = 2+3*4 != 14; return i + j; }'
+try 0 'int main() { char c0; char c1; c0 = 1; c1 = 2; return c0 > c1; }'
+try 1 'int main() { int i; i = 256 + 1; char c; c = 2; return i > c; }'
+try 1 'int main() { int i; i = 256 + 1; char *pc; pc = &i; char c; c = 2; return *pc < c; }'
 
 # Global variables.
 try 3 '
@@ -199,10 +218,11 @@ int x;
 int setlocal(int val) { int x; x = val; }
 int setglobal(int val) { x = val; }
 int main() { setglobal(3); setlocal(2); return x; }'
-try 3 '
+try 5 '
 int *p;
 int x;
-int main() { p = &x; x = 1; *p = *p + 2; return x; }'
+char c;
+int main() { p = &x; x = 1; c = 2; *p = *p + c + 2; return x; }'
 try 7 '
 int x[3];
 int main() { x[0] = 1; x[1] = 2; x[2] = 4; return x[0] + x[1] + x[2]; }'
@@ -255,6 +275,7 @@ int main() {
 try 0 'int main() { if (0) return 1; return 0; }'
 try 1 'int main() { if (1) return 1; return 0; }'
 try 0 'int main() { if (0) return 1; else return 0; return 127; }'
+try 0 'int main() { char c; c = 0; if (c) return 1; else return 0; return 127; }'
 try 0 'int main() { int x; int y; x = 3; if (x + 1 != 2 * 2) y = 1; else y = 0; if (y) return 1; else return 0; }'
 try 1 'int main() { int x; int y; x = 3; if (x + 1 == 2 * 2) y = 1; else y = 0; if (y) return 1; else return 0; }'
 try 15 '
@@ -292,10 +313,12 @@ int main() { return fib(7); }'
 
 try 1 'int main() { int x; x = 1; while (0) x = 0; return x; }'
 try 5 'int main() { int i; i = 0; while (i < 5) i = i + 1; return i; }'
+try 5 'int main() { char i; i = 0; while (i < 5) i = i + 1; return i; }'
 try 10 'int main() { int i; int sum; i = 0; sum = 0; while (i < 5) { sum = sum + i; i = i + 1; } return sum; }'
 try 5 'int main() { int i; i = 0; while ((i = i + 1) < 5) ; return i;}'
 
 try 10 'int main() { int sum; int i; sum = 0; for (i = 0; i < 5; i = i + 1) sum = sum + i; return sum; }'
+try 10 'int main() { int sum; char i; sum = 0; for (i = 0; i < 5; i = i + 1) sum = sum + i; return sum; }'
 try 10 'int main() { int sum; int i; sum = 0; for (i = 4; i >= 0; i = i - 1) sum = sum + i; return sum; }'
 try 5 'int main() { int i; i = 0; for ( ; i < 5; i = i + 1) ; return i; }'
 try 5 'int main() { int i; i = 5; for ( ; i < 5; i = i + 1) ; return i; }'

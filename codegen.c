@@ -119,7 +119,7 @@ static void gen_typed_rax_dereference(const Type *type) {
         printf("  mov rax, qword ptr [rax]\n");
         return;
     default:
-        fprintf(stderr, "An unsupported type size %d.\n", get_typesize(type));
+        fprintf(stderr, "An unpredicted type size %d.\n", get_typesize(type));
         exit(1);
     }
 }
@@ -127,6 +127,9 @@ static void gen_typed_rax_dereference(const Type *type) {
 static void gen_typed_cmp_rax_to_0(const Type *type) {
     size_t siz = get_typesize(type);
     switch (siz) {
+    case 1:
+        printf("  cmp al, 0\n");
+        return;
     case 4:
         printf("  cmp eax, 0\n");
         return;
