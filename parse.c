@@ -63,6 +63,28 @@ Node *new_node_num(int val) {
     return node;
 }
 
+Node *new_node_string(const Token *tok) {
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+    Node *node = calloc(1, sizeof(Node));
+    node->ty = ND_STRING;
+
+    // Set type as a char array.
+    Type *ty_char = calloc(1, sizeof(Type));
+    ty_char->ty = CHAR;
+    Type *ty_string = calloc(1, sizeof(Type));
+    ty_string->ptr_of = ty_char;
+    ty_string->array_len = tok->len;
+    node->type = ty_string;
+
+    // Store the literal.
+    char *buf = malloc(tok->len + 1);
+    strncpy(buf, tok->input, tok->len);
+    buf[tok->len] = '\0';
+    node->name = buf;
+    map_put(strings, buf, (void *)strings->keys->len);
+    return node;
+}
+
 Node *new_node_declaration(const Node* declarator, Type *type) {
     Node *node = calloc(1, sizeof(Node));
     node->ty = ND_DECLARATION;
@@ -119,7 +141,6 @@ static Token *get_token(int i) {
     return (Token *)tokens->data[i];
 }
 
-// Split input string and store to a buffer.
 void tokenize(char *p) {
     tokens = new_vector();
     while (*p) {
@@ -132,6 +153,18 @@ void tokenize(char *p) {
         if (isdigit(*p)) {
             const char *p0 = p;
             push_token(TK_NUM, p, strtol(p, &p, 10), p - p0);
+            continue;
+        }
+        
+        // String literals.
+        if (*p == '"') {
+            ++p;
+            char *p0 = p;
+            while (*p != '"')
+                ++p;
+            int len = p - p0;
+            push_token(TK_STRING_LITERAL, p0, 0, len);
+            ++p;
             continue;
         }
 
@@ -176,24 +209,24 @@ void tokenize(char *p) {
         }
 
         // Equality and nonequality operators.
-        if (*p == '=' && *(p+1) == '=') {
+        if (strncmp(p, "==", 2) == 0) {
             push_token(TK_EQUAL, p, 0, 2);
             p += 2;
             continue;
         }
-        if (*p == '!' && *(p+1) == '=') {
+        if (strncmp(p, "!=", 2) == 0) {
             push_token(TK_NOTEQUAL, p, 0, 2);
             p += 2;
             continue;
         }
         
         // Two-letter relational operators (<= and >=).
-        if (*p == '<' && *(p+1) == '=') {
+        if (strncmp(p, "<=", 2) == 0) {
             push_token(TK_LESSEQUAL, p, 0, 2);
             p += 2;
             continue;
         }
-        if (*p == '>' && *(p+1) == '=') {
+        if (strncmp(p, ">=", 2) == 0) {
             push_token(TK_GREATEREQUAL, p, 0, 2);
             p += 2;
             continue;
@@ -234,6 +267,9 @@ void tokenize(char *p) {
 // =============================================================================
 // A buffer to store parsed statements (ASTs).
 Vector *funcdefs;
+
+// We will store string literals and their indices as we parse.
+Map *strings = NULL;
 
 // Private utility functions.
 static bool consume(int ty) {
@@ -320,6 +356,7 @@ static Type *read_type(Type *inner) {
 void program(void) {
     funcdefs = new_vector();
     globalvars = new_map();
+    strings = new_map();
     pos = 0;
     while (get_token(pos)->ty != TK_EOF) {
         Node *funcdef_or_globalvar = extern_declaration();
@@ -653,6 +690,8 @@ Node *term(void) {
         return new_node_num(get_token(pos++)->val);
     if (get_token(pos)->ty == TK_IDENT)
         return new_node_ident(get_token(pos++), NULL);
+    if (get_token(pos)->ty == TK_STRING_LITERAL)
+        return new_node_string(get_token(pos++));
 
     if (!consume('('))
         error("A token neither a number nor an opening parenthesis.", pos);

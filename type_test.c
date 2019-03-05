@@ -42,7 +42,6 @@ static void type_is_basic_type_test() {
     Type ty_int = (Type) { .ty = INT, .ptr_of = NULL, .array_len = 0 };
     Type ty_pchar = (Type) { .ty = PTR, .ptr_of = &ty_char, .array_len = 0 };
     Type ty_pint = (Type) { .ty = PTR, .ptr_of = &ty_int, .array_len = 0 };
-    Type ty_ppint = (Type) { .ty = PTR, .ptr_of = &ty_pint, .array_len = 0 };
     Type ty_archar = (Type) { .ty = ARRAY, .ptr_of = &ty_char, .array_len = 3 };
     Type ty_arint = (Type) { .ty = ARRAY, .ptr_of = &ty_int, .array_len = 3 };
 

@@ -35,6 +35,7 @@ int max(int x0, int x1);
 // Tokens defined as a single letter is directly expressed as its ASCII code.
 enum {
     TK_NUM = 256,   // Represents a number.
+    TK_STRING_LITERAL,
     TK_TYPE_CHAR,   // Type specifier
     TK_TYPE_INT,
     TK_IDENT,       // Represents an identifier.
@@ -76,6 +77,7 @@ enum {
     ND_DECLARATION,
     ND_NUM,
     ND_IDENT,
+    ND_STRING,      // String literal.
     ND_UEXPR,
     ND_LESSEQUAL,
     ND_GREATEREQUAL,
@@ -143,12 +145,14 @@ typedef struct Node {
 // A buffer to store parsed functions.
 extern Vector *funcdefs;
 extern Map *globalvars;
+extern Map *strings;
 
 Node *new_node(int ty);
 Node *new_node_uop(int ty, Node *operand);
 Node *new_node_binop(int ty, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 Node *new_node_ident(const Token *tok, Type *type);
+Node *new_node_string(const Token *tok);
 Node *new_funcdef(const Token *tok);
 
 // Function to parse an expression to abstract syntax trees.

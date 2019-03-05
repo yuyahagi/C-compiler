@@ -3,6 +3,7 @@
 #include "cc.h"
 
 int main(int argc, char **argv) {
+#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
     if (argc != 2) {
         fprintf(stderr, "Invalid number of arguments.\n");
         return 1;
@@ -31,6 +32,13 @@ int main(int argc, char **argv) {
         printf(".global %s\n", name);
         printf("%s:\n", name);
         printf("  .zero %zu\n", siz);
+    }
+
+    // String literals.
+    printf(".section .rodata\n");
+    for (int i = 0; i < strings->keys->len; i++) {
+        printf(".LC%d:\n", (int)strings->vals->data[i]);
+        printf("  .string \"%s\"\n", (char *)strings->keys->data[i]);
     }
 
     printf(".text\n");

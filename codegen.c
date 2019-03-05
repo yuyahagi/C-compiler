@@ -119,7 +119,7 @@ static void gen_typed_rax_dereference(const Type *type) {
         printf("  mov rax, qword ptr [rax]\n");
         return;
     default:
-        fprintf(stderr, "An unpredicted type size %d.\n", get_typesize(type));
+        fprintf(stderr, "An unpredicted type size %zu.\n", get_typesize(type));
         exit(1);
     }
 }
@@ -247,6 +247,11 @@ static void gen(Node *node, const Map *idents) {
         if (node->type->ty != ARRAY) {
             gen_typed_rax_dereference(node->type);
         }
+        return;
+
+    case ND_STRING:
+        printf("  mov qword ptr [rsp-8], offset flat:.LC%d\n", (int)map_get(strings, node->name));
+        printf("  mov rax, qword ptr [rsp-8]\n");
         return;
 
     case ND_UEXPR:

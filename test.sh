@@ -344,4 +344,11 @@ int main() {
     return fib[6];
 }'
 
+# String literals.
+try 0 'int main() { char *s; s = ""; return *s; }'
+try 72 'int main() { char *s; s = "Hello, world!"; return s[0]; }'
+try 33 'int main() { char *s; s = "Hello, world!"; return *(s+12); }'
+try 0 'int main() { char *s; s = "Hello, world!"; return s[13]; }'
+try 32 'int main() { char *s1; char *s2; s1 = "ABC"; s2 = "abc"; return s2[1] - s1[1]; }'
+
 echo OK
