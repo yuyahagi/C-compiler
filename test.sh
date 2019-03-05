@@ -19,6 +19,7 @@ try() {
 
 # Prepare external functions.
 echo '
+#include <stdio.h>
 #include <stdlib.h>
 int two() { return 2; }
 int func2(int x0, int x1) { return x0 + 10*x1; }
@@ -350,5 +351,6 @@ try 72 'int main() { char *s; s = "Hello, world!"; return s[0]; }'
 try 33 'int main() { char *s; s = "Hello, world!"; return *(s+12); }'
 try 0 'int main() { char *s; s = "Hello, world!"; return s[13]; }'
 try 32 'int main() { char *s1; char *s2; s1 = "ABC"; s2 = "abc"; return s2[1] - s1[1]; }'
+try 1 'int main() { return puts("Hello, world!") >= 0; }'
 
 echo OK
