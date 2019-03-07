@@ -1,0 +1,306 @@
+// For automatically generate test case function names, concatenate line number.
+// We need two layers of indirection to expand macros properly.
+#define INNER_WITH_NUMBER_(num)     INNER_FUNCTION_ ## num
+#define INNER_WITH_NUMBER(num)      INNER_WITH_NUMBER_(num)
+#define TESTCASE_WITH_NUMBER_(num)  TESTCASE_ ## num
+#define TESTCASE_WITH_NUMBER(num)   TESTCASE_WITH_NUMBER_(num)
+
+// Generate test case function.
+// The inner function encloses a series of statements and declarations.
+// The test case function invokes the inner function and verifies its return value.
+#define EXPECT(expected, stmts)                                 \
+    int INNER_WITH_NUMBER(__LINE__)() {                         \
+        stmts                                                   \
+    }                                                           \
+    int TESTCASE_WITH_NUMBER(__LINE__)() {                      \
+        int e1;                                                 \
+        e1 = (expected);                                        \
+        int e2;                                                 \
+        e2 = INNER_WITH_NUMBER(__LINE__)();                     \
+        if (e1 == e2) {                                         \
+            printf("__func__() { %s } => %d\n", #stmts, e2);    \
+        } else {                                                \
+            printf("Line %d: %s: %d expected but got %d.\n",    \
+                    __LINE__, #stmts, e1, e2);                  \
+            exit(1);                                            \
+        }                                                       \
+    }
+
+
+// =============================================================================
+// Test cases.
+// =============================================================================
+
+EXPECT(0, )
+EXPECT(0, ;)
+EXPECT(0, ;;;)
+EXPECT(0, 42;)
+EXPECT(0, return;)
+EXPECT(42, return 42;)
+EXPECT(0, 42; return;)
+EXPECT(0, return; 42;)
+EXPECT(1, return 1; 2;)
+EXPECT(1, return 1; return 2;)
+EXPECT(21, return 5+20-4;)
+EXPECT(21,    return  5 +20 - 4  ; )
+EXPECT(14, return 2+3*4;)
+EXPECT(10, return 2*3+4;)
+EXPECT(14, return 5*4-3*2;)
+EXPECT(5, return 60/12;)
+EXPECT(5, return 1+60/12-1;)
+EXPECT(20, return (2+3)*4;)
+EXPECT(7, 1; 2; return 3+4;)
+
+// Int local variables.
+EXPECT(3, int a; a=1; return a+2;)
+EXPECT(3, int x; x = 1; x = x + 2; return x;)
+EXPECT(4, int _long_variable_1_; _long_variable_1_ = 2; return _long_variable_1_ * 2;)
+EXPECT(5, int foo; int bar; int baz; foo=1; bar=baz=foo+1; return foo+bar*baz;)
+EXPECT(1, int foo; foo = 0; return (foo = foo + 3) == 3;)
+
+// Pointers.
+EXPECT(3, int x; int *p; p = &x; x = 3; return *p;)
+EXPECT(3, int x; int *p; p = &x; *p = 3; return x;)
+EXPECT(3, int x; int *p; int **pp; pp = &p; p = &x; x = 3; return **pp;)
+EXPECT(3, int x; int *p; int **pp; pp = &p; p = &x; **pp = 3; return x;)
+EXPECT(3, int x; int y; int *p; x = 2; p = &x; y = *p + 1; p = &y; return *p;)
+EXPECT(3, int x; int *p; p = &x; *p = 2; *p = 2**p-1; return x;)
+EXPECT(4, 
+    int *p;
+    alloc4(&p, 1, 2, 4, 8);
+    int *q;
+    q = p + 2;
+    return *q;
+)
+EXPECT(4, 
+    int *p;
+    alloc4(&p, 1, 2, 4, 8);
+    return *(2 + p);
+)
+EXPECT(3, 
+    int *p;
+    alloc4(&p, 1, 2, 4, 8);
+    int *q;
+    q = p + 1;
+    *(p + 1) = 3;
+    return *q;
+)
+EXPECT(2, 
+    int *p;
+    alloc4(&p, 1, 2, 4, 8);
+    int offset;
+    offset = 1;
+    int *q;
+    q = two() + p - offset;
+    return *q;
+)
+EXPECT(2, 
+    int *p;
+    alloc4(&p, 1, 2, 4, 8);
+    int offset;
+    offset = 1;
+    return *(two() + p - offset);
+)
+EXPECT(4, 
+    int **pp;
+    allocptr4(&pp, 1, 2, 4, 8);
+    pp = pp + 2;
+    return **pp;
+)
+
+// Arrays.
+EXPECT(0, int ar[9];)
+EXPECT(0, int ar[3]; int *p; p = ar;)
+EXPECT(1, int ar[3]; *ar=1; return *ar;)
+EXPECT(2, int ar[3]; int *p; p = ar; *(p+1) = 2; return *(ar+1);)
+EXPECT(7, int ar[3]; int *p; p = ar; *p = 1; *(p+1) = 2; *(p+2) = 4; return *ar + *(ar+1) + *(ar+2);)
+EXPECT(7, int ar[3]; *ar=1; *(ar+1) = 2; *(ar+2) = 4; return *ar + *(ar+1) + *(ar+2);)
+EXPECT(7, int ar[3]; *ar = 1; *(ar+1) = 2; *(ar+2) = 4; return ar[0] + ar[1] + ar[2];)
+EXPECT(7, int ar[3]; ar[0] = 1; ar[1] = 2; ar[2] = 4; return *ar + *(ar+1) + *(ar+2);)
+EXPECT(2, int ar[3]; int i; i = 1; ar[i] = 2; return ar[i];)
+EXPECT(2, int ar[2]; ar[1] = 2; ar[0] = 1; return ar[1];)
+EXPECT(7, int ar[3]; ar[2] = 4; ar[1] = 2; ar[0] = 1; return ar[0] + ar[1] + ar[2];)
+
+// Other integer types.
+EXPECT(3, char c0; char c1; c0 = 0-5; c1 = c0+8; return c1;)
+EXPECT(3, char c; char *p; p = &c; c = 3; return *p;)
+EXPECT(255, char c; c = 0; c = c - 1; return c;)
+EXPECT(0, char c; c = 255; c = c + 1; return c;)
+EXPECT(0,
+    char arc[4];
+    arc[3] = 4; arc[2] = 3; arc[1] = 2; arc[0] = 1;
+    int *pi;
+    pi = arc;
+    return *pi - (4*256*256*256 + 3*256*256 + 2*256 + 1);
+)
+EXPECT(4,
+    int i;
+    i = 8*256*256*256 + 4*256*256 + 2*256 + 1;
+    char *p;
+    p = &i;
+    return *(2 + p);
+)
+EXPECT(11,
+    int i;
+    i = 8*256*256*256 + 4*256*256 + 2*256 + 1;
+    char *p;
+    p = &i;
+    char *q;
+    q = p + 1;
+    *(two() + p - 1) = 3;
+    return *q + p[3];
+)
+EXPECT(12,
+    int i[3];
+    i[0] = 8*256*256*256 + 4*256*256 + 2*256 + 1;
+    i[1] = 0;
+    i[2] = 3 * i[0];
+    char *p[2];
+    p[0] = &i;
+    p[1] = &i[2];
+    char **pp;
+    pp = &p;
+    pp = pp + 1;
+    return (*pp)[2];
+)
+
+// Relations
+EXPECT(0, return 2 == 2+1;)
+EXPECT(1, return 2 != 2+1;)
+EXPECT(1, return 3-1 == 2;)
+EXPECT(0, return 3-1 != 2;)
+EXPECT(0, return 4 < 3;)
+EXPECT(0, return 3 < 3;)
+EXPECT(1, return 2 < 3;)
+EXPECT(0, return 2 > 3;)
+EXPECT(0, return 3 > 3;)
+EXPECT(1, return 4 > 3;)
+EXPECT(0, return 4 <= 3;)
+EXPECT(1, return 3 <= 3;)
+EXPECT(1, return 2 <= 3;)
+EXPECT(0, return 2 >= 3;)
+EXPECT(1, return 3 >= 3;)
+EXPECT(1, return 4 >= 3;)
+EXPECT(0, return 1 < 10 != 10 > 1;)
+EXPECT(1, return 1 < 10 == 10 > 1;)
+EXPECT(0, return 1 <= 10 != 10 >= 1;)
+EXPECT(1, return 1 <= 10 == 10 >= 1;)
+EXPECT(2, int i; int j; i = j = 2+3*4 == 14; return i + j;)
+EXPECT(0, int i; int j; i = j = 2+3*4 != 14; return i + j;)
+EXPECT(0, char c0; char c1; c0 = 1; c1 = 2; return c0 > c1;)
+EXPECT(1, int i; i = 256 + 1; char c; c = 2; return i > c;)
+EXPECT(1, int i; i = 256 + 1; char *pc; pc = &i; char c; c = 2; return *pc < c;)
+
+// Global variables.
+int gvar_i;
+int gvar_i2;
+char gvar_c;
+int *gvar_pi;
+int gvar_ari[3];
+char gvar_arc[3];
+int setlocal(int val) { int gvar_i; gvar_i = val; }
+int setglobal(int val) { gvar_i = val; }
+EXPECT(3, setglobal(3); return gvar_i;)
+EXPECT(3, setglobal(3); setlocal(2); return gvar_i;)
+EXPECT(5, gvar_pi = &gvar_i; gvar_i = 1; gvar_c = 2; *gvar_pi = *gvar_pi + gvar_c + 2; return gvar_i;)
+EXPECT(7, gvar_ari[0] = 1; gvar_ari[1] = 2; gvar_ari[2] = 4; return gvar_ari[0] + gvar_ari[1] + gvar_ari[2];)
+EXPECT(7, int *p; p = gvar_ari; *p = 1; *(p+1) = 2; *(p+2) = 4; return gvar_ari[0] + gvar_ari[1] + gvar_ari[2];)
+EXPECT(15,
+    gvar_i2 = 8;
+    gvar_ari[2] = 4; gvar_ari[1] = 2; gvar_ari[0] = 1;
+    return gvar_ari[0] + gvar_ari[1] + gvar_ari[2] + gvar_i2;
+)
+EXPECT(0,
+    gvar_arc[2] = 4; gvar_arc[1] = 2; gvar_arc[0] = 1;
+    int *pi; pi = &gvar_arc;
+    return *pi - (4*256*256 + 2*256 + 1);
+)
+
+// Functions.
+EXPECT(2, return two();)
+EXPECT(6, return 1 + (two)() + 3;)
+EXPECT(10, return 2 * (two() + 3);)
+EXPECT(21, return func2(1, 2);)
+EXPECT(21, return func2(3-2, 8/4);)
+EXPECT(21, int x; x = 2; return func2(3-x, 4/x);)
+EXPECT(1, return func8(1, 2, 3, 4, 5, 6, 7, 8) == 87654321;)
+EXPECT(1, int x; x = 2; return func8(1, (x), x+1, x*2, 5, 2*(x+1), 3*x+1, 8) == 87654321;)
+int three() { return 3; }
+int four() { return 4; }
+int two_plus_one() { return two() + 1; }
+EXPECT(3, return three();)
+EXPECT(7, return three() + four();)
+EXPECT(3, return two_plus_one();)
+EXPECT(43, return func2(three(), four());)
+int add(int x0, int x1) { return x0 + x1; }
+EXPECT(3, return add(1, 2);)
+int myfunc6(int x0, int x1, int x2, int x3, int x4, int x5) {
+    return x0 + 10*x1 + 100*x2 + 1000*x3 + 10000*x4 + 100000*x5;
+}
+int myfunc8(int x0, int x1, int x2, int x3, int x4, int x5, int x6, int x7) {
+    return x0 + 10*x1 + 100*x2 + 1000*x3 + 10000*x4 + 100000*x5 + 1000000*x6 + 10000000*x7;
+}
+EXPECT(654321, return myfunc6(1, 2, 3, 4, 5, 6);)
+EXPECT(87654321, return myfunc8(1, 2, 3, 4, 5, 6, 7, 8);)
+
+// Selection and iteration statements.
+EXPECT(0, if (0) return 1; return 0;)
+EXPECT(1, if (1) return 1; return 0;)
+EXPECT(0, if (0) return 1; else return 0; return 127;)
+EXPECT(0, char c; c = 0; if (c) return 1; else return 0; return 127;)
+EXPECT(0, int x; int y; x = 3; if (x + 1 != 2 * 2) y = 1; else y = 0; if (y) return 1; else return 0;)
+EXPECT(1, int x; int y; x = 3; if (x + 1 == 2 * 2) y = 1; else y = 0; if (y) return 1; else return 0;)
+EXPECT(2, int x; x = 0; if (1) { x = 1; x = x * 2; } return x;)
+int add_upto(int x) { if (x == 1) return x; else return x + add_upto(x-1); }
+EXPECT(15, return add_upto(5);)
+EXPECT(2,
+    int x;
+    x = 0;
+    if (0) {
+        x = 1;
+        x = x * 2;
+    } else {
+        x = 0;
+        if (x) x = 1; else x = 2;
+    }
+    return x;
+)
+int fib(int x) {
+    if (x == 2) return 1;
+    if (x == 1) return 1;
+    return fib(x-1) + fib(x-2);
+}
+EXPECT(13, return fib(7);)
+
+EXPECT(1, int x; x = 1; while (0) x = 0; return x;)
+EXPECT(5, int i; i = 0; while (i < 5) i = i + 1; return i;)
+EXPECT(5, char i; i = 0; while (i < 5) i = i + 1; return i;)
+EXPECT(10, int i; int sum; i = 0; sum = 0; while (i < 5) { sum = sum + i; i = i + 1; } return sum;)
+EXPECT(5, int i; i = 0; while ((i = i + 1) < 5) ; return i;)
+
+EXPECT(10, int sum; int i; sum = 0; for (i = 0; i < 5; i = i + 1) sum = sum + i; return sum;)
+EXPECT(10, int sum; char i; sum = 0; for (i = 0; i < 5; i = i + 1) sum = sum + i; return sum;)
+EXPECT(10, int sum; int i; sum = 0; for (i = 4; i >= 0; i = i - 1) sum = sum + i; return sum;)
+EXPECT(5, int i; i = 0; for ( ; i < 5; i = i + 1) ; return i;)
+EXPECT(5, int i; i = 5; for ( ; i < 5; i = i + 1) ; return i;)
+EXPECT(5, int i; i = 0; for ( ; i < 5; ) i = i + 1; return i;)
+EXPECT(34,
+    int sum; int prod; int i;
+    sum = 0;
+    prod = 1;
+    for (i = 1; i < 5; i = i + 1) {
+        sum = sum + i;
+        prod = prod * i;
+    }
+    return sum + prod;
+)
+EXPECT(13,
+    int fib[7]; int i;
+    fib[0] = 1;
+    fib[1] = 1;
+    for (i = 2; i < 7; i = i + 1)
+        fib[i] = fib[i-1] + fib[i-2];
+    return fib[6];
+)
+
+// String literals.

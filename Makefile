@@ -7,9 +7,12 @@ cc: $(OBJS)
 
 $(OBJS): cc.h
 
+.PHONY: test
 test: cc
 	./cc -test
 	./test.sh
 
+.PHONY: clean
 clean:
-	rm -f cc *.o tmp*
+	rm -f cc *.o tmp* test/tmp*
+
