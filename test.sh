@@ -1,22 +1,4 @@
 #!/bin/bash
-try() {
-    expected="$1"
-    input="$2"
-
-    ./cc "$input" > tmp.s
-    gcc -o tmp tmp.s tmp_funcs.o
-    ./tmp
-    actual="$?"
-
-    if [ "$actual" = "$expected" ]; then
-        echo "$input => $actual"
-    else
-        echo "FAIL: \"$input\""
-        echo "expected $expected but got $actual"
-        exit 1
-    fi
-}
-
 # Prepare external functions.
 echo '
 #include <stdio.h>
@@ -39,11 +21,11 @@ void allocptr4(int ***pp, int x0, int x1, int x2, int x3) {
 ' | gcc -xc -c -o tmp_funcs.o -
 
 # Run all test cases (functions TESTCASE_[0-9].*) found in a C source.
-echo Tests implemented in C.
 # We use gcc preprocessor to expand macros.
 gcc -E -P test/test.c > test/tmp_test.c
 echo 'int main() {' >> test/tmp_test.c
 grep -o 'TESTCASE_[0-9].*()' test/tmp_test.c | awk '{print $1";"}' >> test/tmp_test.c
+echo 'printf("\n");' >> test/tmp_test.c
 echo '}' >> test/tmp_test.c
 ./cc "$(cat test/tmp_test.c)" > test/tmp_test.s
 gcc -o tmp_test test/tmp_test.s tmp_funcs.o
@@ -52,17 +34,5 @@ gcc -o tmp_test test/tmp_test.s tmp_funcs.o
 if [ "$?" != 0 ]; then
     exit 1
 fi
-
-
-# End-to-end tests.
-echo End-to-end tests
-
-# String literals.
-try 0 'int main() { char *s; s = ""; return *s; }'
-try 72 'int main() { char *s; s = "Hello, world!"; return s[0]; }'
-try 33 'int main() { char *s; s = "Hello, world!"; return *(s+12); }'
-try 0 'int main() { char *s; s = "Hello, world!"; return s[13]; }'
-try 32 'int main() { char *s1; char *s2; s1 = "ABC"; s2 = "abc"; return s2[1] - s1[1]; }'
-try 1 'int main() { return puts("Hello, world!") >= 0; }'
 
 echo OK
