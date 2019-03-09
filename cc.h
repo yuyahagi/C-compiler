@@ -43,6 +43,8 @@ enum {
     TK_GREATEREQUAL,// ">=".
     TK_EQUAL,       // Equality operator "==".
     TK_NOTEQUAL,    // Nonequality operator "!=".
+    TK_INCREMENT,   // "++".
+    TK_DECREMENT,   // "--".
     TK_IF,
     TK_ELSE,
     TK_WHILE,

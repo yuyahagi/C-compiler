@@ -57,6 +57,10 @@ EXPECT(3) { int x; x = 1; x = x + 2; return x; }
 EXPECT(4) { int _long_variable_1_; _long_variable_1_ = 2; return _long_variable_1_ * 2; }
 EXPECT(5) { int foo; int bar; int baz; foo=1; bar=baz=foo+1; return foo+bar*baz; }
 EXPECT(1) { int foo; foo = 0; return (foo = foo + 3) == 3; }
+EXPECT(6) { int x; x = 5; ++x; return x; }
+EXPECT(0-4) { int x; x = 0-5; return ++x; }
+EXPECT(4) { int x; x = 5; --x; return x; }
+EXPECT(0-6) { int x; x = 0-5; return --x; }
 
 // Pointers.
 EXPECT(3) { int x; int *p; p = &x; x = 3; return *p; }
@@ -126,6 +130,10 @@ EXPECT(3) { char c0; char c1; c0 = 0-5; c1 = c0+8; return c1; }
 EXPECT(3) { char c; char *p; p = &c; c = 3; return *p; }
 EXPECT(255) { char c; c = 0; c = c - 1; return c; }
 EXPECT(0) { char c; c = 255; c = c + 1; return c; }
+EXPECT(6) { char x; x = 5; ++x; return x; }
+EXPECT(0) { char x; x = 255; char y; y = ++x; return y; }
+EXPECT(4) { char x; x = 5; --x; return x; }
+EXPECT(255) { char x; x = 0; char y; y = --x; return y; }
 EXPECT(0) {
     char arc[4];
     arc[3] = 4; arc[2] = 3; arc[1] = 2; arc[0] = 1;

@@ -23,7 +23,10 @@ Node *new_node(int ty) {
 }
 
 Node *new_node_uop(int operator, Node *operand) {
-    assert(operator == '*' || operator == '&');
+    assert(operator == TK_INCREMENT
+        || operator == TK_DECREMENT
+        || operator == '*' 
+        || operator == '&');
     Node *node = calloc(1, sizeof(Node));
     node->ty = ND_UEXPR;
     node->uop = operator;
@@ -31,6 +34,10 @@ Node *new_node_uop(int operator, Node *operand) {
     // Deduce type.
     Type *type = NULL;
     switch (operator) {
+    case TK_INCREMENT:
+    case TK_DECREMENT:
+        type = operand->type;
+        break;
     case '*':
         type = operand->type->ptr_of;
         break;
@@ -231,6 +238,16 @@ void tokenize(char *p) {
             p += 2;
             continue;
         }
+        if (strncmp(p, "++", 2) == 0) {
+            push_token(TK_INCREMENT, p, 0, 2);
+            p += 2;
+            continue;
+        }
+        if (strncmp(p, "--", 2) == 0) {
+            push_token(TK_DECREMENT, p, 0, 2);
+            p += 2;
+            continue;
+        }
 
         // One-letter tokens.
         switch (*p) {
@@ -319,7 +336,7 @@ static void error(const char *msg, size_t i) {
 // add: mul add'
 // add': '' | "+" add' | "-" add'
 // mul: unary | unary "*" mul | unary "/" mul
-// unary: postfix | '*' unary | '&' unary
+// unary: postfix | '++' unary | '--' unary | '*' unary | '&' unary
 // postfix: term | postfix "(" {assign}* ")" | postfix "[" assign "]"
 // term: num | "(" assign ")"
 static Type *read_type(Type *inner) {
@@ -629,11 +646,15 @@ Node *mul(void) {
 
 Node *unary(void) {
     Token *tok = get_token(pos);
-    if (tok->ty == '*' || tok->ty == '&') {
+    switch(tok->ty) {
+    case TK_INCREMENT:
+    case TK_DECREMENT:
+    case '*':
+    case '&':
         ++pos;
         Node *operand = unary();
         return new_node_uop(tok->ty, operand);
-    } else {
+    default:
         return postfix();
     }
 }

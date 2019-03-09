@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include "cc.h"
@@ -124,6 +125,24 @@ static void gen_typed_rax_dereference(const Type *type) {
     }
 }
 
+static void gen_typed_mov_rax_to_ptr_rdi(const Type *type) {
+    size_t siz = get_typesize(type);
+    switch (siz) {
+    case 1:
+        printf("  mov byte ptr [rdi], al\n");
+        return;
+    case 4:
+        printf("  mov dword ptr [rdi], eax\n");
+        return;
+    case 8:
+        printf("  mov [rdi], rax\n");
+        return;
+    default:
+        fprintf(stderr, "An unpredicted type size %zu.\n", siz);
+        exit(1);
+    }
+}
+
 static void gen_typed_cmp_rax_to_0(const Type *type) {
     size_t siz = get_typesize(type);
     switch (siz) {
@@ -143,7 +162,7 @@ static void gen_typed_cmp_rax_to_0(const Type *type) {
 }
 
 static void gen_lval(Node* node, const Map *idents);
-static void gen_add(Node *node, const Map *idents);
+static void gen_add(int ty, Node *lhs, Node *rhs, const Map *idents);
 static void gen(Node *node, const Map *idents);
 
 static void gen_lval(Node *node, const Map *idents) {
@@ -183,7 +202,7 @@ static void gen_lval(Node *node, const Map *idents) {
 
     case '+':
     case '-':   // Fall through.
-        gen_add(node, idents);
+        gen_add(node->ty, node->lhs, node->rhs, idents);
         return;
 
     default:
@@ -192,29 +211,29 @@ static void gen_lval(Node *node, const Map *idents) {
     }
 }
 
-static void gen_add(Node *node, const Map *idents) {
-    assert(node->ty == '+' || node->ty == '-');
-    assert(node->lhs->type);
-    assert(node->rhs->type);
+static void gen_add(int ty, Node *lhs, Node *rhs, const Map *idents) {
+    assert(ty == '+' || ty == '-');
+    assert(lhs->type);
+    assert(rhs->type);
 
-    bool lhs_is_ptr = node->lhs->type->ty == PTR || node->lhs->type->ty == ARRAY;
-    bool rhs_is_ptr = node->rhs->type->ty == PTR || node->rhs->type->ty == ARRAY;
+    bool lhs_is_ptr = lhs->type->ty == PTR || lhs->type->ty == ARRAY;
+    bool rhs_is_ptr = rhs->type->ty == PTR || rhs->type->ty == ARRAY;
     if (lhs_is_ptr && rhs_is_ptr) {
         fprintf(stderr, "Pointer +/- pointer operation not supported (yet).\n");
         exit(1);
     }
 
     // Integer type or pointer arithmatic.
-    gen(node->lhs, idents);
+    gen(lhs, idents);
     if (rhs_is_ptr) {
-        size_t ptrsize = get_typesize(node->rhs->type->ptr_of);
+        size_t ptrsize = get_typesize(rhs->type->ptr_of);
         printf("  mov rdi, %zu\n", ptrsize);
         printf("  mul rdi\n");
     }
     push("rax");
-    gen(node->rhs, idents);
+    gen(rhs, idents);
     if (lhs_is_ptr) {
-        size_t ptrsize = get_typesize(node->lhs->type->ptr_of);
+        size_t ptrsize = get_typesize(lhs->type->ptr_of);
         printf("  mov rdi, %zu\n", ptrsize);
         printf("  mul rdi\n");
     }
@@ -222,13 +241,14 @@ static void gen_add(Node *node, const Map *idents) {
     pop("rdi");
     pop("rax");
 
-    if (node->ty == '+')
+    if (ty == '+')
         printf("  add rax, rdi\n");
     else 
         printf("  sub rax, rdi\n");
 }
 
 static void gen(Node *node, const Map *idents) {
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
     switch (node->ty) {
     case ND_BLANK:
         return;
@@ -256,6 +276,46 @@ static void gen(Node *node, const Map *idents) {
 
     case ND_UEXPR:
         switch (node->uop) {
+        case TK_INCREMENT:
+            gen_lval(node->operand, idents);
+            push("rax");
+            gen_add(
+                '+',
+                node->operand,
+                &(Node) {
+                    .ty = ND_NUM,
+                    .val = 1,
+                    .type = &(Type) {
+                        .ty = INT,
+                        .ptr_of = NULL,
+                        .array_len = 0
+                    }
+                },
+                idents);
+            pop("rdi");
+            gen_typed_mov_rax_to_ptr_rdi(node->type);
+            break;
+
+        case TK_DECREMENT:
+            gen_lval(node->operand, idents);
+            push("rax");
+            gen_add(
+                '-',
+                node->operand,
+                &(Node) {
+                    .ty = ND_NUM,
+                    .val = 1,
+                    .type = &(Type) {
+                        .ty = INT,
+                        .ptr_of = NULL,
+                        .array_len = 0
+                    }
+                },
+                idents);
+            pop("rdi");
+            gen_typed_mov_rax_to_ptr_rdi(node->type);
+            break;
+
         case '&':
             gen_lval(node->operand, idents);
             break;
@@ -264,7 +324,10 @@ static void gen(Node *node, const Map *idents) {
             gen_typed_rax_dereference(node->type);
             break;
         default:
-            fprintf(stderr, "Unknown unary operator %c.\n", node->uop);
+            if (isprint(node->uop))
+                fprintf(stderr, "Unknown unary operator %c.\n", node->uop);
+            else
+                fprintf(stderr, "Unknown unary operator %d.\n", node->uop);
             exit(1);
         }
         return;
@@ -394,25 +457,12 @@ static void gen(Node *node, const Map *idents) {
         gen(node->rhs, idents);
 
         pop("rdi");
-        size_t siz = get_typesize(node->lhs->type);
-        switch (siz) {
-        case 1:
-            printf("  mov byte ptr [rdi], al\n");
-            return;
-        case 4:
-            printf("  mov dword ptr [rdi], eax\n");
-            return;
-        case 8:
-            printf("  mov [rdi], rax\n");
-            return;
-        default:
-            fprintf(stderr, "An unpredicted type size %zu.\n", siz);
-            exit(1);
-        }
+        gen_typed_mov_rax_to_ptr_rdi(node->lhs->type);
+        return;
 
     case '+':
     case '-':   // Fall through.
-        gen_add(node, idents);
+        gen_add(node->ty, node->lhs, node->rhs, idents);
         return;
     }
 
