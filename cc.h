@@ -162,7 +162,7 @@ void program(void);
 Node *funcdef(void);
 Node *extern_declaration(void);
 Node *declaration(Map *variables);
-Node *direct_declarator(Type *type);
+Node *declarator(Type *type);
 Node *compound(void);
 Node *statement(void);
 Node *assign(void);

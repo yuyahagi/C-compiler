@@ -321,8 +321,8 @@ static void error(const char *msg, size_t i) {
 // program: {funcdef}* | declaration
 // funcdef: ident "(" parameter-list ")" compound
 // compound: "{" {declaration}* {statement}* "}"
-// declaration: "int" {"*"}* direct_declarator
-// direct_declarator: ident | direct_declarator "[" num "]"
+// declaration: "int" {"*"}* declarator
+// declarator: ident | declarator "[" num "]"
 // statement: assign ";" | selection | iteration | "return" ";" | "return" assign ";"
 // assign: equal assign'
 // assign': '' | "=" assign'
@@ -339,35 +339,24 @@ static void error(const char *msg, size_t i) {
 // unary: postfix | '++' unary | '--' unary | '*' unary | '&' unary
 // postfix: term | postfix "(" {assign}* ")" | postfix "[" assign "]"
 // term: num | "(" assign ")"
-static Type *read_type(Type *inner) {
-    if (!inner) {
-        Token *tok = get_token(pos++);
-        if (tok->ty != TK_TYPE_INT && tok->ty != TK_TYPE_CHAR) {
-            fprintf(stderr, "A type specifier of int or char was expected but got token %d.\n", tok->ty);
-            exit(1);
-        }
-        inner = calloc(1, sizeof(Type));
-        switch (tok->ty) {
-        case TK_TYPE_INT:
-            inner->ty = INT;
-            break;
-        case TK_TYPE_CHAR:
-            inner->ty = CHAR;
-            break;
-        }
-        inner->ptr_of = NULL;
-    }
 
-    // If '*' follows, make a pointer of a type that has been parsed so far.
-    if (get_token(pos)->ty == '*') {
-        ++pos;
-        Type *inner_ = inner;
-        inner = calloc(1, sizeof(Type));
-        inner->ty = PTR;
-        inner->ptr_of = inner_;
-        return read_type(inner);
+static Type *decl_specifier() {
+    Token *tok = get_token(pos++);
+    if (tok->ty != TK_TYPE_INT && tok->ty != TK_TYPE_CHAR) {
+        fprintf(stderr, "A type specifier of int or char was expected but got token %d.\n", tok->ty);
+        exit(1);
     }
-    return inner;
+    Type *type = calloc(1, sizeof(Type));
+    switch (tok->ty) {
+    case TK_TYPE_INT:
+        type->ty = INT;
+        break;
+    case TK_TYPE_CHAR:
+        type->ty = CHAR;
+        break;
+    }
+    type->ptr_of = NULL;
+    return type;
 }
 
 void program(void) {
@@ -390,7 +379,9 @@ Node *extern_declaration() {
     size_t pos0 = pos;
 
     // Parse till identifier and discard.
-    read_type(NULL);
+    decl_specifier();
+    while(consume('*'))
+        ;   // NOP.
     if (get_token(pos)->ty != TK_IDENT)
         error("A function definition expected but not found.\n", pos);
     ++pos;
@@ -407,7 +398,7 @@ Node *extern_declaration() {
 static Node *parse_func_param() {
     if (get_token(pos)->ty != TK_TYPE_INT)
         error("Missing type specifier for a function parameter.\n", pos);
-    Type *type = read_type(NULL);
+    Type *type = decl_specifier();
     Node *node = new_node_ident(get_token(pos++), type);
     map_put(localvars, node->name, type);
     return node;
@@ -442,16 +433,24 @@ Node *funcdef(void) {
 
 Node *declaration(Map *variables) {
     // Read type before identifier, e.g., "int **".
-    Type *type = read_type(NULL);
+    Type *type = decl_specifier();
     // Declarator after identifier may alter the type.
-    Node *declarator = direct_declarator(type);
-    Node *node = new_node_declaration(declarator, declarator->type);
-    map_put(variables, node->name, declarator->type);
+    Node *decl = declarator(type);
+    Node *node = new_node_declaration(decl, decl->type);
+    map_put(variables, node->name, decl->type);
     expect(';');
     return node;
 }
 
-Node *direct_declarator(Type *type) {
+Node *declarator(Type *type) {
+    // If '*'s are found, make a pointer of a type.
+    while (consume('*')) {
+        Type *inner = type;
+        type = calloc(1, sizeof(Type));
+        type->ty = PTR;
+        type->ptr_of = inner;
+    }
+
     if (type->ty == ARRAY)
         error("Recursive declarator. Not implemented yet.\n", pos);
     if (get_token(pos)->ty != TK_IDENT)
