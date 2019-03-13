@@ -92,13 +92,14 @@ Node *new_node_string(const Token *tok) {
     return node;
 }
 
-Node *new_node_declaration(const Node* declarator, Type *type) {
+Node *new_node_declaration(const Node* declarator, Type *type, Node *init) {
     Node *node = calloc(1, sizeof(Node));
     node->ty = ND_DECLARATION;
     // Copy identifier name.
     node->name = declarator->name;
     // Set type.
     node->type = type;
+    node->declinit = init;
     return node;
 }
 
@@ -322,6 +323,7 @@ static void error(const char *msg, size_t i) {
 // funcdef: ident "(" parameter-list ")" compound
 // compound: "{" {declaration}* {statement}* "}"
 // declaration: "int" {"*"}* declarator
+// init_declarator: declarator | declarator "=" assign
 // declarator: ident | declarator "[" num "]"
 // statement: assign ";" | selection | iteration | "return" ";" | "return" assign ";"
 // assign: equal assign'
@@ -435,10 +437,19 @@ Node *declaration(Map *variables) {
     // Read type before identifier, e.g., "int **".
     Type *type = decl_specifier();
     // Declarator after identifier may alter the type.
-    Node *decl = declarator(type);
-    Node *node = new_node_declaration(decl, decl->type);
-    map_put(variables, node->name, decl->type);
+    Node *node = init_declarator(type);
+    map_put(variables, node->name, node->type);
     expect(';');
+    return node;
+}
+
+Node *init_declarator(Type *type) {
+    Node *decl = declarator(type);
+    Node *init = NULL;
+    if (consume('=')) {
+        init = assign();
+    }
+    Node *node = new_node_declaration(decl, decl->type, init);
     return node;
 }
 

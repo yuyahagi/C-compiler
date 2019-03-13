@@ -169,6 +169,7 @@ static void gen_lval(Node *node, const Map *idents) {
 #pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
     switch (node->ty) {
     case ND_IDENT:
+    case ND_DECLARATION:
     {
         Ident *ident = (Ident *)map_get(idents, node->name);
         if (ident) {
@@ -254,6 +255,13 @@ static void gen(Node *node, const Map *idents) {
         return;
 
     case ND_DECLARATION:
+        if (node->declinit) {
+            gen_lval(node, idents);
+            push("rax");
+            gen(node->declinit, idents);
+            pop("rdi");
+            gen_typed_mov_rax_to_ptr_rdi(node->type);
+        }
         return;
 
     case ND_NUM:

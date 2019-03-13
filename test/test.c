@@ -53,27 +53,28 @@ EXPECT(7) { 1; 2; return 3+4; }
 
 // Int local variables.
 EXPECT(3) { int a; a=1; return a+2; }
-EXPECT(3) { int x; x = 1; x = x + 2; return x; }
+EXPECT(3) { int x=1; x = x+2; return x; }
+EXPECT(3) { int x = 2; int y = x + 2; return y - 1; }
 EXPECT(4) { int _long_variable_1_; _long_variable_1_ = 2; return _long_variable_1_ * 2; }
 EXPECT(5) { int foo; int bar; int baz; foo=1; bar=baz=foo+1; return foo+bar*baz; }
 EXPECT(1) { int foo; foo = 0; return (foo = foo + 3) == 3; }
-EXPECT(6) { int x; x = 5; ++x; return x; }
-EXPECT(0-4) { int x; x = 0-5; return ++x; }
-EXPECT(4) { int x; x = 5; --x; return x; }
-EXPECT(0-6) { int x; x = 0-5; return --x; }
+EXPECT(6) { int x = 5; ++x; return x; }
+EXPECT(0-4) { int x = 0-5; return ++x; }
+EXPECT(4) { int x = 5; --x; return x; }
+EXPECT(0-6) { int x = 0-5; return --x; }
 
 // Pointers.
 EXPECT(3) { int x; int *p; p = &x; x = 3; return *p; }
-EXPECT(3) { int x; int *p; p = &x; *p = 3; return x; }
-EXPECT(3) { int x; int *p; int **pp; pp = &p; p = &x; x = 3; return **pp; }
-EXPECT(3) { int x; int *p; int **pp; pp = &p; p = &x; **pp = 3; return x; }
-EXPECT(3) { int x; int y; int *p; x = 2; p = &x; y = *p + 1; p = &y; return *p; }
-EXPECT(3) { int x; int *p; p = &x; *p = 2; *p = 2**p-1; return x; }
+EXPECT(3) { int x; int *p = &x; x = 3; return *p; }
+EXPECT(3) { int x; int *p = &x; *p = 3; return x; }
+EXPECT(3) { int x; int *p = &x; int **pp = &p; x = 3; return **pp; }
+EXPECT(3) { int x; int *p = &x; int **pp = &p; **pp = 3; return x; }
+EXPECT(3) { int x; int y; int *p = &x; x = 2; y = *p + 1; p = &y; return *p; }
+EXPECT(3) { int x; int *p = &x; *p = 2; *p = 2**p-1; return x; }
 EXPECT(4) { 
     int *p;
     alloc4(&p, 1, 2, 4, 8);
-    int *q;
-    q = p + 2;
+    int *q = p + 2;
     return *q;
 }
 EXPECT(4) {
@@ -84,25 +85,21 @@ EXPECT(4) {
 EXPECT(3) {
     int *p;
     alloc4(&p, 1, 2, 4, 8);
-    int *q;
-    q = p + 1;
+    int *q = p + 1;
     *(p + 1) = 3;
     return *q;
 }
 EXPECT(2) {
     int *p;
     alloc4(&p, 1, 2, 4, 8);
-    int offset;
-    offset = 1;
-    int *q;
-    q = two() + p - offset;
+    int offset = 1;
+    int *q = two() + p - offset;
     return *q;
 }
 EXPECT(2) { 
     int *p;
     alloc4(&p, 1, 2, 4, 8);
-    int offset;
-    offset = 1;
+    int offset = 1;
     return *(two() + p - offset);
 }
 EXPECT(4) { 
@@ -127,34 +124,31 @@ EXPECT(7) { int ar[3]; ar[2] = 4; ar[1] = 2; ar[0] = 1; return ar[0] + ar[1] + a
 
 // Other integer types.
 EXPECT(3) { char c0; char c1; c0 = 0-5; c1 = c0+8; return c1; }
+EXPECT(3) { char c0 = 0-5; char c1 = c0+8; return c1; }
 EXPECT(3) { char c; char *p; p = &c; c = 3; return *p; }
-EXPECT(255) { char c; c = 0; c = c - 1; return c; }
-EXPECT(0) { char c; c = 255; c = c + 1; return c; }
-EXPECT(6) { char x; x = 5; ++x; return x; }
-EXPECT(0) { char x; x = 255; char y; y = ++x; return y; }
-EXPECT(4) { char x; x = 5; --x; return x; }
+EXPECT(255) { char c = 0; c = c - 1; return c; }
+EXPECT(0) { char c = 255; c = c + 1; return c; }
+EXPECT(6) { char x = 5; ++x; return x; }
+EXPECT(0) { char x = 255; char y; y = ++x; return y; }
+EXPECT(4) { char x = 5; --x; return x; }
 EXPECT(255) { char x; x = 0; char y; y = --x; return y; }
 EXPECT(0) {
     char arc[4];
     arc[3] = 4; arc[2] = 3; arc[1] = 2; arc[0] = 1;
-    int *pi;
-    pi = arc;
+    int *pi = arc;
     return *pi - (4*256*256*256 + 3*256*256 + 2*256 + 1);
 }
 EXPECT(4) {
     int i;
     i = 8*256*256*256 + 4*256*256 + 2*256 + 1;
-    char *p;
-    p = &i;
+    char *p = &i;
     return *(2 + p);
 }
 EXPECT(11) {
     int i;
     i = 8*256*256*256 + 4*256*256 + 2*256 + 1;
-    char *p;
-    p = &i;
-    char *q;
-    q = p + 1;
+    char *p = &i;
+    char *q = p + 1;
     *(two() + p - 1) = 3;
     return *q + p[3];
 }
@@ -166,9 +160,8 @@ EXPECT(12) {
     char *p[2];
     p[0] = &i;
     p[1] = &i[2];
-    char **pp;
-    pp = &p;
-    pp = pp + 1;
+    char **pp = &p;
+    ++pp;
     return (*pp)[2];
 }
 
@@ -195,9 +188,9 @@ EXPECT(0) { return 1 <= 10 != 10 >= 1; }
 EXPECT(1) { return 1 <= 10 == 10 >= 1; }
 EXPECT(2) { int i; int j; i = j = 2+3*4 == 14; return i + j; }
 EXPECT(0) { int i; int j; i = j = 2+3*4 != 14; return i + j; }
-EXPECT(0) { char c0; char c1; c0 = 1; c1 = 2; return c0 > c1; }
-EXPECT(1) { int i; i = 256 + 1; char c; c = 2; return i > c; }
-EXPECT(1) { int i; i = 256 + 1; char *pc; pc = &i; char c; c = 2; return *pc < c; }
+EXPECT(0) { char c0 = 1; char c1 = 2; return c0 > c1; }
+EXPECT(1) { int i = 256 + 1; char c = 2; return i > c; }
+EXPECT(1) { int i = 256 + 1; char *pc = &i; char c = 2; return *pc < c; }
 
 // Global variables.
 int gvar_i;
@@ -212,7 +205,7 @@ EXPECT(3) { setglobal(3); return gvar_i; }
 EXPECT(3) { setglobal(3); setlocal(2); return gvar_i; }
 EXPECT(5) { gvar_pi = &gvar_i; gvar_i = 1; gvar_c = 2; *gvar_pi = *gvar_pi + gvar_c + 2; return gvar_i; }
 EXPECT(7) { gvar_ari[0] = 1; gvar_ari[1] = 2; gvar_ari[2] = 4; return gvar_ari[0] + gvar_ari[1] + gvar_ari[2]; }
-EXPECT(7) { int *p; p = gvar_ari; *p = 1; *(p+1) = 2; *(p+2) = 4; return gvar_ari[0] + gvar_ari[1] + gvar_ari[2]; }
+EXPECT(7) { int *p = gvar_ari; *p = 1; *(p+1) = 2; *(p+2) = 4; return gvar_ari[0] + gvar_ari[1] + gvar_ari[2]; }
 EXPECT(15) {
     gvar_i2 = 8;
     gvar_ari[2] = 4; gvar_ari[1] = 2; gvar_ari[0] = 1;
@@ -220,7 +213,7 @@ EXPECT(15) {
 }
 EXPECT(0) {
     gvar_arc[2] = 4; gvar_arc[1] = 2; gvar_arc[0] = 1;
-    int *pi; pi = &gvar_arc;
+    int *pi = &gvar_arc;
     return *pi - (4*256*256 + 2*256 + 1);
 }
 
@@ -230,9 +223,9 @@ EXPECT(6) { return 1 + (two)() + 3; }
 EXPECT(10) { return 2 * (two() + 3); }
 EXPECT(21) { return func2(1, 2); }
 EXPECT(21) { return func2(3-2, 8/4); }
-EXPECT(21) { int x; x = 2; return func2(3-x, 4/x); }
+EXPECT(21) { int x = 2; return func2(3-x, 4/x); }
 EXPECT(1) { return func8(1, 2, 3, 4, 5, 6, 7, 8) == 87654321; }
-EXPECT(1) { int x; x = 2; return func8(1, (x), x+1, x*2, 5, 2*(x+1), 3*x+1, 8) == 87654321; }
+EXPECT(1) { int x = 2; return func8(1, (x), x+1, x*2, 5, 2*(x+1), 3*x+1, 8) == 87654321; }
 int three() { return 3; }
 int four() { return 4; }
 int two_plus_one() { return two() + 1; }
@@ -255,15 +248,14 @@ EXPECT(87654321) { return myfunc8(1, 2, 3, 4, 5, 6, 7, 8); }
 EXPECT(0) { if (0) return 1; return 0; }
 EXPECT(1) { if (1) return 1; return 0; }
 EXPECT(0) { if (0) return 1; else return 0; return 127; }
-EXPECT(0) { char c; c = 0; if (c) return 1; else return 0; return 127; }
-EXPECT(0) { int x; int y; x = 3; if (x + 1 != 2 * 2) y = 1; else y = 0; if (y) return 1; else return 0; }
-EXPECT(1) { int x; int y; x = 3; if (x + 1 == 2 * 2) y = 1; else y = 0; if (y) return 1; else return 0; }
-EXPECT(2) { int x; x = 0; if (1) { x = 1; x = x * 2; } return x; }
+EXPECT(0) { char c = 0; if (c) return 1; else return 0; return 127; }
+EXPECT(0) { int x = 3; int y; if (x + 1 != 2 * 2) y = 1; else y = 0; if (y) return 1; else return 0; }
+EXPECT(1) { int x = 3; int y; if (x + 1 == 2 * 2) y = 1; else y = 0; if (y) return 1; else return 0; }
+EXPECT(2) { int x = 0; if (1) { x = 1; x = x * 2; } return x; }
 int add_upto(int x) { if (x == 1) return x; else return x + add_upto(x-1); }
 EXPECT(15) { return add_upto(5); }
 EXPECT(2) {
-    int x;
-    x = 0;
+    int x = 0;
     if (0) {
         x = 1;
         x = x * 2;
@@ -280,22 +272,22 @@ int fib(int x) {
 }
 EXPECT(13) { return fib(7); }
 
-EXPECT(1) { int x; x = 1; while (0) x = 0; return x; }
-EXPECT(5) { int i; i = 0; while (i < 5) i = i + 1; return i; }
-EXPECT(5) { char i; i = 0; while (i < 5) i = i + 1; return i; }
-EXPECT(10) { int i; int sum; i = 0; sum = 0; while (i < 5) { sum = sum + i; i = i + 1; } return sum; }
-EXPECT(5) { int i; i = 0; while ((i = i + 1) < 5) ; return i; }
+EXPECT(1) { int x = 1; while (0) x = 0; return x; }
+EXPECT(5) { int i = 0; while (i < 5) i = i + 1; return i; }
+EXPECT(5) { char i = 0; while (i < 5) i = i + 1; return i; }
+EXPECT(10) { int i = 0; int sum = 0; while (i < 5) { sum = sum + i; i = i + 1; } return sum; }
+EXPECT(5) { int i = 0; while ((i = i + 1) < 5) ; return i; }
 
-EXPECT(10) { int sum; int i; sum = 0; for (i = 0; i < 5; i = i + 1) sum = sum + i; return sum; }
-EXPECT(10) { int sum; char i; sum = 0; for (i = 0; i < 5; i = i + 1) sum = sum + i; return sum; }
-EXPECT(10) { int sum; int i; sum = 0; for (i = 4; i >= 0; i = i - 1) sum = sum + i; return sum; }
-EXPECT(5) { int i; i = 0; for ( ; i < 5; i = i + 1) ; return i; }
-EXPECT(5) { int i; i = 5; for ( ; i < 5; i = i + 1) ; return i; }
-EXPECT(5) { int i; i = 0; for ( ; i < 5; ) i = i + 1; return i; }
+EXPECT(10) { int sum = 0; int i; for (i = 0; i < 5; i = i + 1) sum = sum + i; return sum; }
+EXPECT(10) { int sum = 0; char i; for (i = 0; i < 5; i = i + 1) sum = sum + i; return sum; }
+EXPECT(10) { int sum = 0; int i; for (i = 4; i >= 0; i = i - 1) sum = sum + i; return sum; }
+EXPECT(5) { int i = 0; for ( ; i < 5; i = i + 1) ; return i; }
+EXPECT(5) { int i = 5; for ( ; i < 5; i = i + 1) ; return i; }
+EXPECT(5) { int i = 0; for ( ; i < 5; ) i = i + 1; return i; }
 EXPECT(34) {
-    int sum; int prod; int i;
-    sum = 0;
-    prod = 1;
+    int sum = 0;
+    int prod = 1;
+    int i;
     for (i = 1; i < 5; i = i + 1) {
         sum = sum + i;
         prod = prod * i;
@@ -313,9 +305,9 @@ EXPECT(13) {
 
 // String literals.
 EXPECT(0) { char *s; s = ""; return *s; }
-EXPECT(72) { char *s; s = "Hello, world!"; return s[0]; }
-EXPECT(33) { char *s; s = "Hello, world!"; return *(s+12); }
-EXPECT(0) { char *s; s = "Hello, world!"; return s[13]; }
-EXPECT(32) { char *s1; char *s2; s1 = "ABC"; s2 = "abc"; return s2[1] - s1[1]; }
+EXPECT(72) { char *s = "Hello, world!"; return s[0]; }
+EXPECT(33) { char *s = "Hello, world!"; return *(s+12); }
+EXPECT(0) { char *s = "Hello, world!"; return s[13]; }
+EXPECT(32) { char *s1 = "ABC"; char *s2 = "abc"; return s2[1] - s1[1]; }
 EXPECT(1) { return puts("Hello, world!") >= 0; }
 

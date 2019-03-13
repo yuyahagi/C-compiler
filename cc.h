@@ -124,6 +124,7 @@ typedef struct Node {
     int val;            // Value of ND_NUM node.
     Type *type;         // For declarations and identifiers.
     char *name;         // For declarations and identifiers.
+    struct Node *declinit;  // For declaration initializers.
     Vector *args;       // For function calls.
     struct Node *body;  // Function body (compound statement).
 
@@ -155,6 +156,7 @@ Node *new_node_binop(int ty, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 Node *new_node_ident(const Token *tok, Type *type);
 Node *new_node_string(const Token *tok);
+Node *new_node_declaration(const Node* declarator, Type *type, Node *init);
 Node *new_funcdef(const Token *tok);
 
 // Function to parse an expression to abstract syntax trees.
@@ -162,6 +164,7 @@ void program(void);
 Node *funcdef(void);
 Node *extern_declaration(void);
 Node *declaration(Map *variables);
+Node *init_declarator(Type *type);
 Node *declarator(Type *type);
 Node *compound(void);
 Node *statement(void);
