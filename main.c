@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include "cc.h"
@@ -24,14 +25,25 @@ int main(int argc, char **argv) {
     printf(".global main\n");
 
     // Global variables.
-    printf(".bss\n");
     for (int i = 0; i < globalvars->keys->len; i++) {
         char *name = (char *)globalvars->keys->data[i];
-        Type *type = (Type *)globalvars->vals->data[i];
+        Node *var = (Node *)globalvars->vals->data[i];
+        Type *type = var->type;
         size_t siz = get_typesize(type);
-        printf(".global %s\n", name);
-        printf("%s:\n", name);
-        printf("  .zero %zu\n", siz);
+        if (var->declinit) {
+            assert(var->declinit->ty == ND_NUM);
+            assert(var->declinit->type->ty == INT);
+            printf(".data\n");
+            printf(".global %s\n", name);
+            printf("%s:\n", name);
+            printf("  .long %zi\n", var->declinit->val);
+        }
+        else {
+            printf(".bss\n");
+            printf(".global %s\n", name);
+            printf("%s:\n", name);
+            printf("  .zero %zu\n", siz);
+        }
     }
 
     // String literals.

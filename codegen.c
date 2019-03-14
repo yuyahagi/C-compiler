@@ -180,7 +180,8 @@ static void gen_lval(Node *node, const Map *idents) {
         }
 
         // Local variable not found. Look for a global.
-        Type *type = (Type *)map_get(globalvars, node->name);
+        Node *var = (Node *)map_get(globalvars, node->name);
+        Type *type = var->type;
         if (type) {
             printf("  lea rax, dword ptr %s[rip]\n", node->name);
             return;

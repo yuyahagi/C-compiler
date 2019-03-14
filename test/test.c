@@ -195,12 +195,17 @@ EXPECT(1) { int i = 256 + 1; char *pc = &i; char c = 2; return *pc < c; }
 // Global variables.
 int gvar_i;
 int gvar_i2;
+int gvar_i_initialized = 500;
 char gvar_c;
+char gvar_c_initialized = 257;
 int *gvar_pi;
 int gvar_ari[3];
 char gvar_arc[3];
 int setlocal(int val) { int gvar_i; gvar_i = val; }
 int setglobal(int val) { gvar_i = val; }
+
+EXPECT(500) { return gvar_i_initialized; }
+EXPECT(1) { return gvar_c_initialized; }
 EXPECT(3) { setglobal(3); return gvar_i; }
 EXPECT(3) { setglobal(3); setlocal(2); return gvar_i; }
 EXPECT(5) { gvar_pi = &gvar_i; gvar_i = 1; gvar_c = 2; *gvar_pi = *gvar_pi + gvar_c + 2; return gvar_i; }

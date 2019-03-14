@@ -117,8 +117,14 @@ Node *new_node_ident(const Token *tok, Type *type) {
     // If this is a function identifier externally defined,
     // we may not know the return type at this time of development.
     Type *t = type;
-    if (!t) t = (Type *)map_get(localvars, node->name);
-    if (!t) t = (Type *)map_get(globalvars, node->name);
+    if (!t) {
+        Node *n = (Node *)map_get(localvars, node->name);
+        if (n) t = n->type;
+    }
+    if (!t) {
+        Node *n = (Node *)map_get(globalvars, node->name);
+        if (n) t = n->type;
+    }
     node->type = t;
     return node;
 }
@@ -402,7 +408,7 @@ static Node *parse_func_param() {
         error("Missing type specifier for a function parameter.\n", pos);
     Type *type = decl_specifier();
     Node *node = new_node_ident(get_token(pos++), type);
-    map_put(localvars, node->name, type);
+    map_put(localvars, node->name, node);
     return node;
 }
 
@@ -438,7 +444,7 @@ Node *declaration(Map *variables) {
     Type *type = decl_specifier();
     // Declarator after identifier may alter the type.
     Node *node = init_declarator(type);
-    map_put(variables, node->name, node->type);
+    map_put(variables, node->name, node);
     expect(';');
     return node;
 }
