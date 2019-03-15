@@ -99,7 +99,6 @@ struct Node;
 // =============================================================================
 // Types.
 // =============================================================================
-struct Node;
 typedef struct Type {
     enum { CHAR, INT, PTR, ARRAY } ty;
     struct Type *ptr_of;
@@ -118,31 +117,60 @@ typedef struct {
 } Ident;
 
 typedef struct Node {
-    int ty;             // Type of node.
-    struct Node *lhs;
-    struct Node *rhs;
-    int val;            // Value of ND_NUM node.
-    Type *type;         // For declarations and identifiers.
-    char *name;         // For declarations and identifiers.
-    struct Node *declinit;  // For declaration initializers.
-    Vector *args;       // For function calls.
-    struct Node *body;  // Function body (compound statement).
+    int ty;             // Kind of node.
+    Type *type;         // For expressions, declarations, and identifiers.
 
-    Vector *stmts;      // Compound statement.
-    Map *localvars;     // Local variables in a compound statement.
+    union {
+        // ND_NUM literal.
+        int val;
 
-    int uop;            // Unary operator.
-    struct Node *operand;
+        // Unary operator.
+        struct {
+            int uop;
+            struct Node *operand;
+        };
 
-    // Selection statement.
-    // cond is also used by iteration statements.
-    struct Node *cond;
-    struct Node *then;
-    struct Node *els;
+        // Binary operator.
+        struct {
+            struct Node *lhs;
+            struct Node *rhs;
+        };
 
-    // For statement. Use then for the iteration body.
-    struct Node *init;
-    struct Node *step;
+        // Variable or variable declaration.
+        struct {
+            char *name;
+            struct Node *declinit;  // For declaration initializers.
+        };
+
+        // Function declaration or call.
+        struct {
+            char *fname;
+            Vector *fargs;
+            struct Node *fbody;
+        };
+
+        // Compound statement.
+        struct {
+            Vector *stmts;
+            Map *localvars;         // Local variables in a compound statement.
+        };
+
+        // Selection statement.
+        struct {
+            struct Node *cond;
+            struct Node *then;
+            struct Node *els;
+        };
+
+        // Iteration statement.
+        struct {
+            struct Node *iterinit;  // Always NULL for a while-loop.
+            struct Node *itercond;
+            struct Node *iterbody;
+            struct Node *step;
+        };
+    };
+
 } Node;
 
 // A buffer to store parsed functions.

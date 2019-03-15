@@ -61,13 +61,13 @@ static int decls_to_offsets(const Vector *code, Map *idents, int starting_offset
 static int idents_in_func(const Node *func, Map *idents) {
     int offset = -8;
     // First 6 function parameters are to be copied to the stack.
-    int nargs = func->args->len;
+    int nargs = func->fargs->len;
     int nregargs = nargs <= 6 ? nargs : 6;
     int nstackargs = nargs - nregargs;
     for (int i = 0; i < nregargs; i++) {
         put_ident(
             idents,
-            ((Node *)func->args->data[i])->name,
+            ((Node *)func->fargs->data[i])->name,
             make_type(INT, NULL),
             offset);
         offset -= 8;
@@ -77,12 +77,12 @@ static int idents_in_func(const Node *func, Map *idents) {
     for (int i = nstackargs - 1; i >= 0; i--) {
         put_ident(
             idents,
-            ((Node *)func->args->data[i+6])->name,
+            ((Node *)func->fargs->data[i+6])->name,
             make_type(INT, NULL),
             8 * (i + 2));
     }
     // Count identifiers in the function body and assign offsets.
-    int offset_end = decls_to_offsets(func->body->stmts, idents, offset);
+    int offset_end = decls_to_offsets(func->fbody->stmts, idents, offset);
     return offset_end + 8;
 }
 
@@ -343,7 +343,7 @@ static void gen(Node *node, const Map *idents) {
 
     case ND_CALL:
     {
-        int nargs = node->args->len;
+        int nargs = node->fargs->len;
         int nregargs = nargs <= 6 ? nargs : 6;
         int nstackargs = nargs - nregargs;
         char *regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
@@ -358,7 +358,7 @@ static void gen(Node *node, const Map *idents) {
 
         // Evaluate argument expressions.
         for (int i = nargs - 1; i >= 0; i--) {
-            gen(node->args->data[i], idents);
+            gen(node->fargs->data[i], idents);
             push("rax");
         }
 
@@ -420,11 +420,11 @@ static void gen(Node *node, const Map *idents) {
 
         printf(".L%d:\n", lbl_beg);
         // Condition check.
-        gen(node->cond, idents);
-        gen_typed_cmp_rax_to_0(node->cond->type);
+        gen(node->itercond, idents);
+        gen_typed_cmp_rax_to_0(node->itercond->type);
         printf("  je .L%d\n", lbl_end);
 
-        gen(node->then, idents);
+        gen(node->iterbody, idents);
 
         printf("  jmp .L%d\n", lbl_beg);
         printf(".L%d:\n", lbl_end);
@@ -436,14 +436,14 @@ static void gen(Node *node, const Map *idents) {
         int lbl_beg = nlabel++;
         int lbl_end = nlabel++;
 
-        gen(node->init, idents);
+        gen(node->iterinit, idents);
         printf(".L%d:\n", lbl_beg);
 
-        gen(node->cond, idents);
-        gen_typed_cmp_rax_to_0(node->cond->type);
+        gen(node->itercond, idents);
+        gen_typed_cmp_rax_to_0(node->itercond->type);
         printf("  je .L%d\n", lbl_end);
 
-        gen(node->then, idents);
+        gen(node->iterbody, idents);
 
         gen(node->step, idents);
         printf("  jmp .L%d\n", lbl_beg);
@@ -531,7 +531,7 @@ static void gen(Node *node, const Map *idents) {
 
 void gen_function(Node *func) {
     stackpos = 0;
-    printf("%s:\n", func->name);
+    printf("%s:\n", func->fname);
     push("rbp");
     printf("  mov rbp, rsp\n");
 
@@ -546,16 +546,16 @@ void gen_function(Node *func) {
 
     // First 6 function parameters are in registers. Copy them to stack.
     const char *regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
-    int nargs = func->args->len;
+    int nargs = func->fargs->len;
     int nregargs = nargs <= 6 ? nargs : 6;
     for (int i = 0; i < nregargs; i++) {
-        char *param_name = ((Node *)func->args->data[i])->name;
+        char *param_name = ((Node *)func->fargs->data[i])->name;
         Ident *ident = (Ident *)map_get(idents, param_name);
         printf("  mov [rbp%+d], %s\n", ident->offset, regs[i]);
     }
 
     // Generate assembly from the ASTs.
-    gen(func->body, idents);
+    gen(func->fbody, idents);
 
     // End of function. Return default int.
     // This will likely emit a redundant function epilogue after a return statement.

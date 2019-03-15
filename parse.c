@@ -133,10 +133,10 @@ Node *new_funcdef(const Token *tok) {
     Node *func = calloc(1, sizeof(Node));
     func->ty = ND_FUNCDEF;
     size_t len = tok->len;
-    func->name = malloc(len);
-    strncpy(func->name, tok->input, len);
-    func->name[len] = '\0';
-    func->args = new_vector();
+    func->fname = malloc(len);
+    strncpy(func->fname, tok->input, len);
+    func->fname[len] = '\0';
+    func->fargs = new_vector();
     return func;
 }
 
@@ -428,14 +428,14 @@ Node *funcdef(void) {
     if (!consume('('))
         error("'(' expected but not found.\n", pos);
     if (!consume(')')) {
-        vec_push(func->args, parse_func_param());
+        vec_push(func->fargs, parse_func_param());
         while (consume(',')) {
-            vec_push(func->args, parse_func_param());
+            vec_push(func->fargs, parse_func_param());
         }
         expect(')');
     }
 
-    func->body = compound();
+    func->fbody = compound();
     return func;
 }
 
@@ -583,9 +583,9 @@ Node *selection(void) {
 Node *iteration_while(void) {
     Node *node = new_node(ND_WHILE);
     expect('(');
-    node->cond = assign();
+    node->itercond = assign();
     expect(')');
-    node->then = statement();
+    node->iterbody = statement();
     return node;
 }
 
@@ -593,21 +593,21 @@ Node *iteration_for(void) {
     Node *node = new_node(ND_FOR);
     expect('(');
     if (get_token(pos)->ty != ';')
-        node->init = assign();
+        node->iterinit = assign();
     else
-        node->init = new_node(ND_BLANK);
+        node->iterinit = new_node(ND_BLANK);
     expect(';');
     if (get_token(pos)->ty != ';')
-        node->cond = assign();
+        node->itercond = assign();
     else
-        node->cond = new_node(ND_BLANK);
+        node->itercond = new_node(ND_BLANK);
     expect(';');
     if (get_token(pos)->ty != ')')
         node->step = assign();
     else
         node->step = new_node(ND_BLANK);
     expect(')');
-    node->then = statement();
+    node->iterbody = statement();
     return node;
 }
 
@@ -684,7 +684,7 @@ Node *postfix(void) {
         // Function call.
         ++pos;
         node->ty = ND_CALL;
-        node->args = new_vector();
+        node->fargs = new_vector();
 
         // Set return type.
         // For now, we assume all functions return an int.
@@ -697,9 +697,9 @@ Node *postfix(void) {
             return node;
 
         // List arguments.
-        vec_push(node->args, assign());
+        vec_push(node->fargs, assign());
         while (consume(','))
-            vec_push(node->args, assign());
+            vec_push(node->fargs, assign());
         if (!consume(')'))
             error("No closing parenthesis ')' for function call.", pos);
         break;

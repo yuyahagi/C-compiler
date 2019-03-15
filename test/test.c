@@ -12,10 +12,8 @@
     /* We don't have forward declaration yet so simply call the test */     \
     /* function that is to be defined later. */                             \
     int TESTCASE_WITH_NUMBER(__LINE__)() {                                  \
-        int e1;                                                             \
-        e1 = (expected);                                                    \
-        int e2;                                                             \
-        e2 = TEST_FUNCTION_WITH_NUMBER(__LINE__)();                         \
+        int e1 = (expected);                                                \
+        int e2 = TEST_FUNCTION_WITH_NUMBER(__LINE__)();                     \
         if (e1 == e2) {                                                     \
             printf(".");                                                    \
         } else {                                                            \

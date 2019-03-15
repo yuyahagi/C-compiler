@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
             printf(".data\n");
             printf(".global %s\n", name);
             printf("%s:\n", name);
-            printf("  .long %zi\n", var->declinit->val);
+            printf("  .long %d\n", var->declinit->val);
         }
         else {
             printf(".bss\n");
