@@ -14,8 +14,17 @@ size_t get_typesize(const Type *type) {
     case ARRAY:
         return type->array_len * get_typesize(type->ptr_of);
     case STRUCT:
-        // TODO: Struct size is not fixed.
-        return 8;
+    {
+        assert(type->members);
+        int siz = 0;
+        for (int i = 0; i < type->members->keys->len; i++) {
+            siz += get_typesize(((Node *)type->members->vals->data[i])->type);
+        }
+        // Align to 8 bytes (assuming siz >= 0);
+        siz += 8 - (siz & 7);
+        assert(siz % 8 == 0);
+        return siz;
+    }
 
     default:
         fprintf(stderr, "An unknown type id %d.\n", type->ty);
@@ -63,3 +72,16 @@ Type *deduce_type(int operator, Node *lhs, Node *rhs) {
     return lhs->type;
 }
 
+int get_member_offset(const Type *type, const char *member_name) {
+    // TODO: Offset depends on member types.
+    int i = 0;
+    Map *members = type->members;
+    for (; i < members->keys->len && strcmp(members->keys->data[i], member_name) != 0; i++)
+        ;   // NOP.
+    if (i == members->keys->len) {
+        fprintf(stderr, "An unknown struct member %s.\n", member_name);
+        exit(1);
+    }
+    int offset = 4 * i;
+    return offset;
+}

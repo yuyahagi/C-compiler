@@ -267,6 +267,7 @@ void tokenize(char *p) {
         case ')':
         case '*':
         case '+':
+        case '.':
         case ',':
         case '-':
         case '/':
@@ -349,7 +350,7 @@ static void error(const char *msg, size_t i) {
 // add': '' | "+" add' | "-" add'
 // mul: unary | unary "*" mul | unary "/" mul
 // unary: postfix | '++' unary | '--' unary | '*' unary | '&' unary
-// postfix: term | postfix "(" {assign}* ")" | postfix "[" assign "]"
+// postfix: term | postfix "(" {assign}* ")" | postfix "[" assign "]" | postfix "." ident
 // term: num | "(" assign ")"
 
 static Type *decl_specifier() {
@@ -743,6 +744,26 @@ Node *postfix(void) {
         node = new_node_uop('*', binop);
         if (!consume(']'))
             error("No closing bracket for array index.", pos);
+        break;
+    }
+
+    case '.':
+    {
+        // Struct member access.
+        // Copy member name and type.
+        ++pos;
+        Token *tok = get_token(pos++);
+
+        Node *member_of = node;
+        node = new_node(ND_MEMBER);
+        node->member_of = member_of;
+        char *mname = malloc(tok->len + 1);
+        strncpy(mname, tok->input, tok->len);
+        mname[tok->len] = '\0';
+        node->mname = mname;
+        assert(member_of->type);
+        assert(member_of->type->members);
+        node->type = ((Node *)map_get(member_of->type->members, mname))->type;
         break;
     }
     }

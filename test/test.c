@@ -317,4 +317,16 @@ EXPECT(1) { return puts("Hello, world!") >= 0; }
 // Struct.
 EXPECT(0) { struct {} s; }
 EXPECT(0) { struct { int x; int y; } s; }
+EXPECT(3) { struct { int x; int y; } s; s.x = 1; s.y = 2; return s.x + s.y; }
+EXPECT(7) {
+    int guard1 = 0; int guard2 = 0;
+    struct {
+        int x;
+        int y;
+        int z;
+    } s;
+    int guard3 = 0; int guard4 = 0;
+    s.x = 1; s.y = 2; s.z = 4;
+    return s.x + s.y + s.z + guard1 + guard2 + guard3 + guard4;
+}
 

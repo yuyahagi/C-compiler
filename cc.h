@@ -86,6 +86,7 @@ enum {
     ND_GREATEREQUAL,
     ND_EQUAL,
     ND_NOTEQUAL,
+    ND_MEMBER,      // Struct member access.
     ND_IF,
     ND_WHILE,
     ND_FOR,
@@ -110,6 +111,7 @@ typedef struct Type {
 size_t get_typesize(const Type *type);
 bool is_basic_type(const Type *type);
 Type *deduce_type(int operator, struct Node *lhs, struct Node *rhs);
+int get_member_offset(const Type *type, const char *member_name);
 void runtest_type(void);
 
 
@@ -125,6 +127,12 @@ typedef struct Node {
     union {
         // ND_NUM literal.
         int val;
+
+        // Struct or union member access.
+        struct {
+            struct Node *member_of;
+            const char *mname;
+        };
 
         // Unary operator.
         struct {

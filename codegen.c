@@ -196,6 +196,16 @@ static void gen_lval(Node *node, const Map *idents) {
         exit(1);
     }
 
+    case ND_MEMBER:
+    {
+        assert(node->member_of);
+        assert(node->member_of->type->ty == STRUCT);
+        gen_lval(node->member_of, idents);
+        int offset = get_member_offset(node->member_of->type, node->mname);
+        printf("  add rax, %d\n", offset);
+        return;
+    }
+
     case ND_UEXPR:
         assert(node->uop == '*');
         if (node->operand->type->ty == ARRAY) {
@@ -286,6 +296,11 @@ static void gen(Node *node, const Map *idents) {
     case ND_STRING:
         printf("  mov qword ptr [rsp-8], offset flat:.LC%d\n", (int)map_get(strings, node->name));
         printf("  mov rax, qword ptr [rsp-8]\n");
+        return;
+
+    case ND_MEMBER:
+        gen_lval(node, idents);
+        gen_typed_rax_dereference(node->type);
         return;
 
     case ND_UEXPR:
