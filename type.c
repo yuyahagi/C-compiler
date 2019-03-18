@@ -13,6 +13,9 @@ size_t get_typesize(const Type *type) {
         return 8;
     case ARRAY:
         return type->array_len * get_typesize(type->ptr_of);
+    case STRUCT:
+        // TODO: Struct size is not fixed.
+        return 8;
 
     default:
         fprintf(stderr, "An unknown type id %d.\n", type->ty);

@@ -41,13 +41,18 @@ static int decls_to_offsets(const Vector *code, Map *idents, int starting_offset
             offset -= 8;
             break;
         case ARRAY:
-            offset -=
-                get_typesize(node->type->ptr_of)
-                * node->type->array_len;
+            offset -= get_typesize(node->type);
             // Align to 8 bytes (assuming offset <= 0);
             offset -= offset & 7;
             put_ident(idents, node->name, node->type, offset + 8);
             assert(offset % 8 == 0);
+            break;
+        case STRUCT:
+            offset -= get_typesize(node->type);
+            // Align to 8 bytes (assuming offset <= 0);
+            offset -= offset & 7;
+            put_ident(idents, node->name, node->type, offset + 8);
+            assert(offset %8 == 0);
             break;
         default:
             fprintf(stderr, "Unknown type id %d.\n", node->type->ty);

@@ -198,6 +198,10 @@ void tokenize(char *p) {
                 push_token(TK_TYPE_CHAR, p0, 0, len);
                 continue;
             }
+            if (strncmp(p0, "struct", max(len, 6)) == 0) {
+                push_token(TK_STRUCT, p0, 0, len);
+                continue;
+            }
             if (strncmp(p0, "return", max(len, 6)) == 0) {
                 push_token(TK_RETURN, p0, 0, len);
                 continue;
@@ -350,8 +354,10 @@ static void error(const char *msg, size_t i) {
 
 static Type *decl_specifier() {
     Token *tok = get_token(pos++);
-    if (tok->ty != TK_TYPE_INT && tok->ty != TK_TYPE_CHAR) {
-        fprintf(stderr, "A type specifier of int or char was expected but got token %d.\n", tok->ty);
+    if (tok->ty != TK_TYPE_INT
+            && tok->ty != TK_TYPE_CHAR
+            && tok->ty != TK_STRUCT) {
+        fprintf(stderr, "A type specifier of int, char, or struct was expected but got token %d.\n", tok->ty);
         exit(1);
     }
     Type *type = calloc(1, sizeof(Type));
@@ -362,6 +368,17 @@ static Type *decl_specifier() {
     case TK_TYPE_CHAR:
         type->ty = CHAR;
         break;
+    case TK_STRUCT:
+    {
+        type->ty = STRUCT;
+        expect('{');
+        Map *members = new_map();
+        while (!consume('}')) {
+            struct_declaration(members);
+        }
+        type->members = members;
+        break;
+    }
     }
     type->ptr_of = NULL;
     return type;
@@ -449,6 +466,16 @@ Node *declaration(Map *variables) {
     return node;
 }
 
+Node *struct_declaration(Map *members) {
+    // Read type before identifier, e.g., "int **".
+    Type *type = decl_specifier();
+    // Declarator after identifier may alter the type.
+    Node *node = declarator(type);
+    map_put(members, node->name, node);
+    expect(';');
+    return node;
+}
+
 Node *init_declarator(Type *type) {
     Node *decl = declarator(type);
     Node *init = NULL;
@@ -501,7 +528,9 @@ Node *compound(void) {
     Token *tok = get_token(pos);
     while (tok->ty != TK_EOF && tok->ty != '}') {
         Node *decl_or_stmt = NULL;
-        if (tok->ty == TK_TYPE_INT || tok->ty == TK_TYPE_CHAR)
+        if (tok->ty == TK_TYPE_INT
+                || tok->ty == TK_TYPE_CHAR
+                || tok->ty == TK_STRUCT)
             decl_or_stmt = declaration(localvars);
         else
             decl_or_stmt = statement();

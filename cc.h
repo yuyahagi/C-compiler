@@ -38,6 +38,7 @@ enum {
     TK_STRING_LITERAL,
     TK_TYPE_CHAR,   // Type specifier
     TK_TYPE_INT,
+    TK_STRUCT,
     TK_IDENT,       // Represents an identifier.
     TK_LESSEQUAL,   // "<=".
     TK_GREATEREQUAL,// ">=".
@@ -100,9 +101,10 @@ struct Node;
 // Types.
 // =============================================================================
 typedef struct Type {
-    enum { CHAR, INT, PTR, ARRAY } ty;
+    enum { CHAR, INT, PTR, ARRAY, STRUCT } ty;
     struct Type *ptr_of;
     size_t array_len;
+    Map *members;
 } Type;
 
 size_t get_typesize(const Type *type);
@@ -192,6 +194,7 @@ void program(void);
 Node *funcdef(void);
 Node *extern_declaration(void);
 Node *declaration(Map *variables);
+Node *struct_declaration(Map *members);
 Node *init_declarator(Type *type);
 Node *declarator(Type *type);
 Node *compound(void);

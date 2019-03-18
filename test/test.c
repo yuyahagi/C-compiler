@@ -314,3 +314,7 @@ EXPECT(0) { char *s = "Hello, world!"; return s[13]; }
 EXPECT(32) { char *s1 = "ABC"; char *s2 = "abc"; return s2[1] - s1[1]; }
 EXPECT(1) { return puts("Hello, world!") >= 0; }
 
+// Struct.
+EXPECT(0) { struct {} s; }
+EXPECT(0) { struct { int x; int y; } s; }
+
