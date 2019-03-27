@@ -48,18 +48,20 @@ EXPECT(5) { return 60/12; }
 EXPECT(5) { return 1+60/12-1; }
 EXPECT(20) { return (2+3)*4; }
 EXPECT(7) { 1; 2; return 3+4; }
+EXPECT(-3) { return -3; }
 
 // Int local variables.
 EXPECT(3) { int a; a=1; return a+2; }
+EXPECT(3) { int a = -3; return -a; }
 EXPECT(3) { int x=1; x = x+2; return x; }
 EXPECT(3) { int x = 2; int y = x + 2; return y - 1; }
 EXPECT(4) { int _long_variable_1_; _long_variable_1_ = 2; return _long_variable_1_ * 2; }
 EXPECT(5) { int foo; int bar; int baz; foo=1; bar=baz=foo+1; return foo+bar*baz; }
 EXPECT(1) { int foo; foo = 0; return (foo = foo + 3) == 3; }
 EXPECT(6) { int x = 5; ++x; return x; }
-EXPECT(0-4) { int x = 0-5; return ++x; }
+EXPECT(-4) { int x = -5; return ++x; }
 EXPECT(4) { int x = 5; --x; return x; }
-EXPECT(0-6) { int x = 0-5; return --x; }
+EXPECT(-6) { int x = -5; return --x; }
 
 // Pointers.
 EXPECT(3) { int x; int *p; p = &x; x = 3; return *p; }
@@ -121,8 +123,8 @@ EXPECT(2) { int ar[2]; ar[1] = 2; ar[0] = 1; return ar[1]; }
 EXPECT(7) { int ar[3]; ar[2] = 4; ar[1] = 2; ar[0] = 1; return ar[0] + ar[1] + ar[2]; }
 
 // Other integer types.
-EXPECT(3) { char c0; char c1; c0 = 0-5; c1 = c0+8; return c1; }
-EXPECT(3) { char c0 = 0-5; char c1 = c0+8; return c1; }
+EXPECT(3) { char c0; char c1; c0 = -5; c1 = c0+8; return c1; }
+EXPECT(3) { char c0 = -5; char c1 = c0+8; return c1; }
 EXPECT(3) { char c; char *p; p = &c; c = 3; return *p; }
 EXPECT(255) { char c = 0; c = c - 1; return c; }
 EXPECT(0) { char c = 255; c = c + 1; return c; }
@@ -353,7 +355,7 @@ EXPECT(0) {
     } s;
     int guard3 = 0; int guard4 = 0;
 
-    int i = 0-300;
+    int i = -300;
     s.i6 = 261;
     s.c5 = 260;
     s.i4 = 259;

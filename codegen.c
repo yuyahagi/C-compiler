@@ -352,6 +352,21 @@ static void gen(Node *node, const Map *idents) {
             gen_lval(node, idents);
             gen_typed_rax_dereference(node->type);
             break;
+        case '-':
+            gen_add(
+                '-',
+                &(Node) {
+                    .ty = ND_NUM,
+                    .val = 0,
+                    .type = &(Type) {
+                        .ty = INT,
+                        .ptr_of = NULL,
+                        .array_len = 0
+                    }
+                },
+                node->operand,
+                idents);
+            break;
         default:
             if (isprint(node->uop))
                 fprintf(stderr, "Unknown unary operator %c.\n", node->uop);

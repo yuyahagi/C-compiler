@@ -26,7 +26,8 @@ Node *new_node_uop(int operator, Node *operand) {
     assert(operator == TK_INCREMENT
         || operator == TK_DECREMENT
         || operator == '*' 
-        || operator == '&');
+        || operator == '&'
+        || operator == '-');
     Node *node = calloc(1, sizeof(Node));
     node->ty = ND_UEXPR;
     node->uop = operator;
@@ -697,6 +698,7 @@ Node *unary(void) {
     case TK_DECREMENT:
     case '*':
     case '&':
+    case '-':
         ++pos;
         Node *operand = unary();
         return new_node_uop(tok->ty, operand);
