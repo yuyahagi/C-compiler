@@ -105,12 +105,14 @@ typedef struct Type {
     enum { CHAR, INT, PTR, ARRAY, STRUCT } ty;
     struct Type *ptr_of;
     size_t array_len;
-    Map *members;
+    Map *member_types;
+    Map *member_offsets;
 } Type;
 
 size_t get_typesize(const Type *type);
 bool is_basic_type(const Type *type);
 Type *deduce_type(int operator, struct Node *lhs, struct Node *rhs);
+void add_member(Type *struct_type, const char *member_name, Type *member_type);
 int get_member_offset(const Type *type, const char *member_name);
 void runtest_type(void);
 
@@ -202,7 +204,7 @@ void program(void);
 Node *funcdef(void);
 Node *extern_declaration(void);
 Node *declaration(Map *variables);
-Node *struct_declaration(Map *members);
+Node *struct_declaration(Type *struct_type);
 Node *init_declarator(Type *type);
 Node *declarator(Type *type);
 Node *compound(void);

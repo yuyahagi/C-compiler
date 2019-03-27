@@ -44,6 +44,7 @@ static void type_is_basic_type_test() {
     Type ty_pint = (Type) { .ty = PTR, .ptr_of = &ty_int, .array_len = 0 };
     Type ty_archar = (Type) { .ty = ARRAY, .ptr_of = &ty_char, .array_len = 3 };
     Type ty_arint = (Type) { .ty = ARRAY, .ptr_of = &ty_int, .array_len = 3 };
+    Type ty_struct = (Type) { .ty = STRUCT };
 
     expect(__LINE__, 1, is_basic_type(&ty_char));
     expect(__LINE__, 1, is_basic_type(&ty_int));
@@ -51,6 +52,7 @@ static void type_is_basic_type_test() {
     expect(__LINE__, 0, is_basic_type(&ty_pint));
     expect(__LINE__, 0, is_basic_type(&ty_archar));
     expect(__LINE__, 0, is_basic_type(&ty_arint));
+    expect(__LINE__, 0, is_basic_type(&ty_struct));
 
     fprintf(stderr, "Type basic type test OK\n");
 }
@@ -87,6 +89,36 @@ static void type_getsize_test() {
     // Array of pointers.
     Type ty_arpint = (Type) { .ty = ARRAY, .ptr_of = &ty_pint, .array_len = 3 };
     expect(__LINE__, 24, get_typesize(&ty_arpint));
+
+    // Structures.
+    Map *member_types = new_map();
+    Map *member_offsets = new_map();
+    Type ty_struct = (Type) {
+        .ty = STRUCT,
+        .member_types = member_types,
+        .member_offsets = member_offsets
+    };
+    expect(__LINE__, 0, get_typesize(&ty_struct));
+
+    add_member(&ty_struct, "c1", &ty_char);
+    expect(__LINE__, 8, get_typesize(&ty_struct));
+
+    add_member(&ty_struct, "c2", &ty_char);
+    add_member(&ty_struct, "i3", &ty_int);
+    expect(__LINE__, 8, get_typesize(&ty_struct));
+
+    add_member(&ty_struct, "i4", &ty_int);
+    add_member(&ty_struct, "pi5", &ty_pint);
+    add_member(&ty_struct, "i6", &ty_int);
+    expect(__LINE__, 32, get_typesize(&ty_struct));
+
+    // Offset alignment of struct members.
+    expect(__LINE__, 0, get_member_offset(&ty_struct, "c1"));
+    expect(__LINE__, 1, get_member_offset(&ty_struct, "c2"));
+    expect(__LINE__, 4, get_member_offset(&ty_struct, "i3"));
+    expect(__LINE__, 8, get_member_offset(&ty_struct, "i4"));
+    expect(__LINE__, 16, get_member_offset(&ty_struct, "pi5"));
+    expect(__LINE__, 24, get_member_offset(&ty_struct, "i6"));
 
     fprintf(stderr, "Type size test OK\n");
 }

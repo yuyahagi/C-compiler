@@ -373,11 +373,12 @@ static Type *decl_specifier() {
     {
         type->ty = STRUCT;
         expect('{');
-        Map *members = new_map();
+        type->member_types = new_map();
+        type->member_offsets = new_map();
         while (!consume('}')) {
-            struct_declaration(members);
+            Node *member = struct_declaration(type);
+            add_member(type, member->name, member->type);
         }
-        type->members = members;
         break;
     }
     }
@@ -467,12 +468,11 @@ Node *declaration(Map *variables) {
     return node;
 }
 
-Node *struct_declaration(Map *members) {
+Node *struct_declaration(Type *struct_type) {
     // Read type before identifier, e.g., "int **".
     Type *type = decl_specifier();
     // Declarator after identifier may alter the type.
     Node *node = declarator(type);
-    map_put(members, node->name, node);
     expect(';');
     return node;
 }
@@ -762,8 +762,8 @@ Node *postfix(void) {
         mname[tok->len] = '\0';
         node->mname = mname;
         assert(member_of->type);
-        assert(member_of->type->members);
-        node->type = ((Node *)map_get(member_of->type->members, mname))->type;
+        assert(member_of->type->member_types);
+        node->type = (Type *)map_get(member_of->type->member_types, mname);
         break;
     }
     }

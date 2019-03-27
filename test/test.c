@@ -329,4 +329,50 @@ EXPECT(7) {
     s.x = 1; s.y = 2; s.z = 4;
     return s.x + s.y + s.z + guard1 + guard2 + guard3 + guard4;
 }
+EXPECT(7) {
+    int guard1 = 0; int guard2 = 0;
+    struct {
+        char c1;
+        char c2;
+        int i;
+    } s;
+    int guard3 = 0; int guard4 = 0;
+    s.c2 = 2; s.c1 = 257;
+    s.i = 4;
+    return s.i + s.c1 + s.c2 + guard1 + guard2 + guard3 + guard4;
+}
+EXPECT(0) {
+    int guard1 = 0; int guard2 = 0;
+    struct {
+        char c1;
+        char c2;
+        int *pi3;
+        int i4;
+        char c5;
+        int i6;
+    } s;
+    int guard3 = 0; int guard4 = 0;
+
+    int i = 0-300;
+    s.i6 = 261;
+    s.c5 = 260;
+    s.i4 = 259;
+    s.pi3 = &i;
+    s.c2 = 258;
+    s.c1 = 257;
+
+    char *pc;
+    int *pi;
+    int **ppi;
+    char *pc0 = &s;
+    pc = pc0 + 0; if (*pc != 1) return 1;
+    pc = pc0 + 1; if (*pc != 2) return 2;
+    pc = pc0 + 8; ppi = pc; if (*ppi != &i) return 3;
+    pc = pc0 + 16; pi = pc; if (*pi != 259) return 4;
+    pc = pc0 + 20; if (*pc != 4) return 5;
+    pc = pc0 + 24; pi = pc; if (*pi != 261) return 6;
+
+    return 0;
+}
+
 
