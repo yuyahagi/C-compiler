@@ -49,6 +49,10 @@ EXPECT(5) { return 1+60/12-1; }
 EXPECT(20) { return (2+3)*4; }
 EXPECT(7) { 1; 2; return 3+4; }
 EXPECT(-3) { return -3; }
+EXPECT(3) { return +3; }
+EXPECT(3) { return -(-3); }
+EXPECT(3) { return +(+3); }
+EXPECT(3) { return -(+(-3)); }
 
 // Int local variables.
 EXPECT(3) { int a; a=1; return a+2; }

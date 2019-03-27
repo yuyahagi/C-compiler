@@ -9,6 +9,8 @@
 Vector *tokens;
 size_t pos = 0;
 
+// Forward declaration.
+static void error(const char* msg, size_t i);
 
 // =============================================================================
 // Tokenization.
@@ -27,6 +29,7 @@ Node *new_node_uop(int operator, Node *operand) {
         || operator == TK_DECREMENT
         || operator == '*' 
         || operator == '&'
+        || operator == '+'
         || operator == '-');
     Node *node = calloc(1, sizeof(Node));
     node->ty = ND_UEXPR;
@@ -46,6 +49,13 @@ Node *new_node_uop(int operator, Node *operand) {
         type = calloc(1, sizeof(Type));
         type->ty = PTR;
         type->ptr_of = operand->type;
+        break;
+    case '+':
+    case '-':
+        type = operand->type;
+        break;
+    default:
+        error("Unknown unary operator operator.\n", pos);
         break;
     }
     node->type = type;
@@ -698,6 +708,7 @@ Node *unary(void) {
     case TK_DECREMENT:
     case '*':
     case '&':
+    case '+':
     case '-':
         ++pos;
         Node *operand = unary();

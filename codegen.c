@@ -352,9 +352,10 @@ static void gen(Node *node, const Map *idents) {
             gen_lval(node, idents);
             gen_typed_rax_dereference(node->type);
             break;
+        case '+':
         case '-':
             gen_add(
-                '-',
+                node->uop,
                 &(Node) {
                     .ty = ND_NUM,
                     .val = 0,
