@@ -306,30 +306,22 @@ static void gen(const Node *node, const Map *idents) {
     case ND_UEXPR:
         switch (node->uop) {
         case TK_INCREMENT:
-            gen_lval(node->operand, idents);
-            push("rax");
-            gen_add(
-                '+',
-                node->operand,
-                &(Node) {
-                    .ty = ND_NUM,
-                    .val = 1,
-                    .type = &(Type) {
-                        .ty = INT,
-                        .ptr_of = NULL,
-                        .array_len = 0
-                    }
-                },
-                idents);
-            pop("rdi");
-            gen_typed_mov_rax_to_ptr_rdi(node->type);
-            break;
-
         case TK_DECREMENT:
+        {
+            // This is a postfix increment/decrement.
+            // Prefix increment/decrement, on the other hand, are expressed as (E = E + 1).
+
+            // First evaluate the value of the operand.
             gen_lval(node->operand, idents);
+            printf("  mov rdi, rax\n");
+            gen_typed_rax_dereference(node->operand->type);
             push("rax");
+
+            // Then increment/decrement.
+            push("rdi");
+            char operator = node->uop == TK_INCREMENT ? '+' : '-';
             gen_add(
-                '-',
+                operator,
                 node->operand,
                 &(Node) {
                     .ty = ND_NUM,
@@ -343,7 +335,9 @@ static void gen(const Node *node, const Map *idents) {
                 idents);
             pop("rdi");
             gen_typed_mov_rax_to_ptr_rdi(node->type);
+            pop("rax");
             break;
+        }
 
         case '&':
             gen_lval(node->operand, idents);

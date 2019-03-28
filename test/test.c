@@ -64,8 +64,12 @@ EXPECT(5) { int foo; int bar; int baz; foo=1; bar=baz=foo+1; return foo+bar*baz;
 EXPECT(1) { int foo; foo = 0; return (foo = foo + 3) == 3; }
 EXPECT(6) { int x = 5; ++x; return x; }
 EXPECT(-4) { int x = -5; return ++x; }
+EXPECT(6) { int x = 5; x++; return x; }
+EXPECT(-5) { int x = -5; return x++; }
 EXPECT(4) { int x = 5; --x; return x; }
 EXPECT(-6) { int x = -5; return --x; }
+EXPECT(4) { int x = 5; x--; return x; }
+EXPECT(-5) { int x = -5; return x--; }
 
 // Pointers.
 EXPECT(3) { int x; int *p; p = &x; x = 3; return *p; }

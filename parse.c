@@ -706,13 +706,28 @@ Node *unary(void) {
     switch(tok->ty) {
     case TK_INCREMENT:
     case TK_DECREMENT:
+    {
+        // Prefix increment or decrement.
+        // Convert them (++)E to (E = E + 1).
+        // We will preserve unary expression node with "++" and "--",
+        // on the other hand, as postfix increment/decrement.
+        ++pos;
+        Node *operand = unary();
+        char operator = tok->ty == TK_INCREMENT ? '+' : '-';
+        return new_node_binop(
+            '=',
+            operand,
+            new_node_binop(operator, operand, new_node_num(1)));
+    }
     case '*':
     case '&':
     case '+':
     case '-':
+    {
         ++pos;
         Node *operand = unary();
         return new_node_uop(tok->ty, operand);
+    }
     default:
         return postfix();
     }
@@ -778,6 +793,16 @@ Node *postfix(void) {
         assert(member_of->type->member_types);
         node->type = (Type *)map_get(member_of->type->member_types, mname);
         break;
+    }
+
+    case TK_INCREMENT:
+    case TK_DECREMENT:
+    {
+        // We interpret UEXPR of "++" or "--" as postfix operation.
+        // I.e., its value is that of the operand and then we
+        // will execute the increment/decrement as a side effect.
+        ++pos;
+        return new_node_uop(tok->ty, node);
     }
     }
 
