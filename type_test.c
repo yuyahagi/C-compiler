@@ -112,6 +112,14 @@ static void type_getsize_test() {
     add_member(&ty_struct, "i6", &ty_int);
     expect(__LINE__, 32, get_typesize(&ty_struct));
 
+    add_member(&ty_struct, "c7", &ty_char);
+    add_member(&ty_struct, "c8", &ty_char);
+    add_member(&ty_struct, "arc3_9", &ty_archar);
+    expect(__LINE__, 40, get_typesize(&ty_struct));
+
+    add_member(&ty_struct, "ari3_10", &ty_arint);
+    expect(__LINE__, 48, get_typesize(&ty_struct));
+
     // Offset alignment of struct members.
     expect(__LINE__, 0, get_member_offset(&ty_struct, "c1"));
     expect(__LINE__, 1, get_member_offset(&ty_struct, "c2"));
@@ -119,6 +127,10 @@ static void type_getsize_test() {
     expect(__LINE__, 8, get_member_offset(&ty_struct, "i4"));
     expect(__LINE__, 16, get_member_offset(&ty_struct, "pi5"));
     expect(__LINE__, 24, get_member_offset(&ty_struct, "i6"));
+    expect(__LINE__, 28, get_member_offset(&ty_struct, "c7"));
+    expect(__LINE__, 29, get_member_offset(&ty_struct, "c8"));
+    expect(__LINE__, 30, get_member_offset(&ty_struct, "arc3_9"));
+    expect(__LINE__, 36, get_member_offset(&ty_struct, "ari3_10"));
 
     fprintf(stderr, "Type size test OK\n");
 }

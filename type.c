@@ -4,6 +4,17 @@
 #include <string.h>
 #include "cc.h"
 
+static size_t get_nonaligned_size(const Type *struct_type) {
+    size_t n = struct_type->member_offsets->keys->len;
+    size_t offset = 0;
+    if (n > 0) {
+        Type *last_member = (Type *)struct_type->member_types->vals->data[n-1];
+        size_t last = (size_t)struct_type->member_offsets->vals->data[n-1];
+        offset = last + (size_t)get_typesize(last_member);
+    }
+    return offset;
+}
+
 size_t get_typesize(const Type *type) {
     switch (type->ty) {
     case CHAR:
@@ -17,14 +28,15 @@ size_t get_typesize(const Type *type) {
     case STRUCT:
     {
         assert(type->member_types);
-        int totalsize = 0;
-        for (int i = 0; i < type->member_types->keys->len; i++) {
-            // Offset of this member. Align to its size boundary.
-            int siz = get_typesize((Type *)type->member_types->vals->data[i]);
-            if (siz > 1)
-                totalsize += (-(totalsize & (siz-1)) & (siz-1));
-            totalsize += siz;
+        // Nonaligned size.
+        size_t totalsize = 0;
+        size_t n = type->member_offsets->keys->len;
+        if (n > 0) {
+            Type *last_member = (Type *)type->member_types->vals->data[n-1];
+            size_t last = (size_t)type->member_offsets->vals->data[n-1];
+            totalsize = last + (size_t)get_typesize(last_member);
         }
+        totalsize = get_nonaligned_size(type);
         // Align to 8 bytes (assuming totalsize >= 0);
         totalsize += (-(totalsize & 7)) & 7;
         assert(totalsize % 8 == 0);
@@ -82,21 +94,19 @@ void add_member(Type *struct_type, const char *member_name, Type *member_type) {
     Map *member_offsets = struct_type->member_offsets;
     map_put(member_types, member_name, member_type);
     // Store the offset.
-    // Offset of last member before this one.
-    int n = member_offsets->keys->len;
-    //offset = 4 * n;
-    int offset = 0;
-    if (n > 0) {
-        Type *last_member = (Type *)member_types->vals->data[n-1];
-        int last = (int)member_offsets->vals->data[n-1];
-        offset = last + (int)get_typesize(last_member);
-    }
-    int siz = get_typesize(member_type);
-    if (siz > 1)
-        offset += (-(offset & (siz-1)) & (siz-1));
-    map_put(member_offsets, member_name, offset);
+    // Nonaligned offset for the new member.
+    size_t offset = get_nonaligned_size(struct_type);
+    // Alignment. If the member is an array, align to the size of the array element.
+    size_t align_to;
+    if (member_type->ty != ARRAY)
+        align_to = get_typesize(member_type);
+    else
+        align_to = get_typesize(member_type->ptr_of);
+    // Align to the next boundary of align_to.
+    offset += (-(offset & (align_to-1)) & (align_to-1));
+    map_put(member_offsets, member_name, (void *)offset);
 }
 
-int get_member_offset(const Type *type, const char *member_name) {
-    return (int)map_get(type->member_offsets, member_name);
+size_t get_member_offset(const Type *type, const char *member_name) {
+    return (size_t)map_get(type->member_offsets, member_name);
 }

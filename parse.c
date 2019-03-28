@@ -479,7 +479,7 @@ Node *declaration(Map *variables) {
     return node;
 }
 
-Node *struct_declaration(Type *struct_type) {
+Node *struct_declaration() {
     // Read type before identifier, e.g., "int **".
     Type *type = decl_specifier();
     // Declarator after identifier may alter the type.

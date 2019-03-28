@@ -7,13 +7,13 @@
 // Data structures.
 // =============================================================================
 typedef struct {
-    void **data;
+    const void **data;
     int capacity;
     int len;
 } Vector;
 
 Vector *new_vector();
-void vec_push(Vector *vec, void *elem);
+void vec_push(Vector *vec, const void *elem);
 void runtest_util();
 
 typedef struct {
@@ -22,8 +22,8 @@ typedef struct {
 } Map;
 
 Map *new_map();
-void map_put(Map *map, char *key, void *val);
-void *map_get(const Map *map, const char *key);
+void map_put(Map *map, const char *key, const void *val);
+const void *map_get(const Map *map, const char *key);
 
 int max(int x0, int x1);
 
@@ -113,13 +113,13 @@ size_t get_typesize(const Type *type);
 bool is_basic_type(const Type *type);
 Type *deduce_type(int operator, struct Node *lhs, struct Node *rhs);
 void add_member(Type *struct_type, const char *member_name, Type *member_type);
-int get_member_offset(const Type *type, const char *member_name);
+size_t get_member_offset(const Type *type, const char *member_name);
 void runtest_type(void);
 
 
 typedef struct {
     Type *type;
-    int offset;
+    size_t offset;
 } Ident;
 
 typedef struct Node {
@@ -204,7 +204,7 @@ void program(void);
 Node *funcdef(void);
 Node *extern_declaration(void);
 Node *declaration(Map *variables);
-Node *struct_declaration(Type *struct_type);
+Node *struct_declaration();
 Node *init_declarator(Type *type);
 Node *declarator(Type *type);
 Node *compound(void);

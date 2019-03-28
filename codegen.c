@@ -166,11 +166,11 @@ static void gen_typed_cmp_rax_to_0(const Type *type) {
     }
 }
 
-static void gen_lval(Node* node, const Map *idents);
+static void gen_lval(const Node* node, const Map *idents);
 static void gen_add(int ty, Node *lhs, Node *rhs, const Map *idents);
-static void gen(Node *node, const Map *idents);
+static void gen(const Node *node, const Map *idents);
 
-static void gen_lval(Node *node, const Map *idents) {
+static void gen_lval(const Node *node, const Map *idents) {
 #pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
     switch (node->ty) {
     case ND_IDENT:
@@ -264,7 +264,7 @@ static void gen_add(int ty, Node *lhs, Node *rhs, const Map *idents) {
         printf("  sub rax, rdi\n");
 }
 
-static void gen(Node *node, const Map *idents) {
+static void gen(const Node *node, const Map *idents) {
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
     switch (node->ty) {
     case ND_BLANK:
@@ -587,7 +587,7 @@ void gen_function(Node *func) {
     for (int i = 0; i < nregargs; i++) {
         char *param_name = ((Node *)func->fargs->data[i])->name;
         Ident *ident = (Ident *)map_get(idents, param_name);
-        printf("  mov [rbp%+d], %s\n", ident->offset, regs[i]);
+        printf("  mov [rbp+%zu], %s\n", ident->offset, regs[i]);
     }
 
     // Generate assembly from the ASTs.
