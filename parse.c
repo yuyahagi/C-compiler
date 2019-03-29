@@ -248,7 +248,7 @@ void tokenize(char *p) {
             p += 2;
             continue;
         }
-        
+
         // Two-letter relational operators (<= and >=).
         if (strncmp(p, "<=", 2) == 0) {
             push_token(TK_LESSEQUAL, p, 0, 2);
@@ -270,6 +270,19 @@ void tokenize(char *p) {
             p += 2;
             continue;
         }
+
+        // Two-letter assignment operators. '=' is handled later as a one-letter operator.
+        if (strncmp(p, "+=", 2) == 0) {
+            push_token(TK_ASSIGNPLUS, p, 0, 2);
+            p += 2;
+            continue;
+        }
+        if (strncmp(p, "-=", 2) == 0) {
+            push_token(TK_ASSIGNMINUS, p, 0, 2);
+            p += 2;
+            continue;
+        }
+
 
         // One-letter tokens.
         switch (*p) {
@@ -602,10 +615,21 @@ Node *statement(void) {
     return node;
 }
 
+// For "+=" and "-=" and so on, apply the operator on lhs and rhs and then
+// assign the result to lhs.
+static Node *reassign_to_lhs(char operator, Node *lhs, Node *rhs) {
+    return new_node_binop('=', lhs,
+        new_node_binop(operator, lhs, rhs));
+}
+
 Node *assign(void) {
     Node *lhs = equal();
     if (consume('='))
         return new_node_binop('=', lhs, assign());
+    if (consume(TK_ASSIGNPLUS))
+        return reassign_to_lhs('+', lhs, assign());
+    if (consume(TK_ASSIGNMINUS))
+        return reassign_to_lhs('-', lhs, assign());
     return lhs;
 }
 

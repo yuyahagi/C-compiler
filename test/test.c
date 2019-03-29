@@ -200,6 +200,12 @@ EXPECT(0) { char c0 = 1; char c1 = 2; return c0 > c1; }
 EXPECT(1) { int i = 256 + 1; char c = 2; return i > c; }
 EXPECT(1) { int i = 256 + 1; char *pc = &i; char c = 2; return *pc < c; }
 
+// Assignment expressions.
+EXPECT(5) { int x = -5; x = 5; return x; }
+EXPECT(0) { int x = -5; x += 5; return x; }
+EXPECT(0) { int x = -5; return x += 5; }
+EXPECT(-10) { int x = -5; x -= 5; return x; }
+
 // Global variables.
 int gvar_i;
 int gvar_i2;

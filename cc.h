@@ -40,6 +40,8 @@ enum {
     TK_TYPE_INT,
     TK_STRUCT,
     TK_IDENT,       // Represents an identifier.
+    TK_ASSIGNPLUS,  // "+=".
+    TK_ASSIGNMINUS, // "-=".
     TK_LESSEQUAL,   // "<=".
     TK_GREATEREQUAL,// ">=".
     TK_EQUAL,       // Equality operator "==".
