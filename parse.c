@@ -282,7 +282,16 @@ void tokenize(char *p) {
             p += 2;
             continue;
         }
-
+        if (strncmp(p, "*=", 2) == 0) {
+            push_token(TK_ASSIGNMULT, p, 0, 2);
+            p += 2;
+            continue;
+        }
+        if (strncmp(p, "/=", 2) == 0) {
+            push_token(TK_ASSIGNDIVIDE, p, 0, 2);
+            p += 2;
+            continue;
+        }
 
         // One-letter tokens.
         switch (*p) {
@@ -630,6 +639,10 @@ Node *assign(void) {
         return reassign_to_lhs('+', lhs, assign());
     if (consume(TK_ASSIGNMINUS))
         return reassign_to_lhs('-', lhs, assign());
+    if (consume(TK_ASSIGNMULT))
+        return reassign_to_lhs('*', lhs, assign());
+    if (consume(TK_ASSIGNDIVIDE))
+        return reassign_to_lhs('/', lhs, assign());
     return lhs;
 }
 

@@ -42,6 +42,8 @@ enum {
     TK_IDENT,       // Represents an identifier.
     TK_ASSIGNPLUS,  // "+=".
     TK_ASSIGNMINUS, // "-=".
+    TK_ASSIGNMULT,  // "*=".
+    TK_ASSIGNDIVIDE,// '/='.
     TK_LESSEQUAL,   // "<=".
     TK_GREATEREQUAL,// ">=".
     TK_EQUAL,       // Equality operator "==".

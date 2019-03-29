@@ -205,6 +205,8 @@ EXPECT(5) { int x = -5; x = 5; return x; }
 EXPECT(0) { int x = -5; x += 5; return x; }
 EXPECT(0) { int x = -5; return x += 5; }
 EXPECT(-10) { int x = -5; x -= 5; return x; }
+EXPECT(-25) { int x = -5; x *= 5; return x; }
+EXPECT(-1) { int x = -5; x /= 5; return x; }
 
 // Global variables.
 int gvar_i;
