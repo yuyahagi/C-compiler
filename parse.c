@@ -292,6 +292,21 @@ void tokenize(char *p) {
             p += 2;
             continue;
         }
+        if (strncmp(p, "|=", 2) == 0) {
+            push_token(TK_ASSIGNOR, p, 0, 2);
+            p += 2;
+            continue;
+        }
+        if (strncmp(p, "^=", 2) == 0) {
+            push_token(TK_ASSIGNXOR, p, 0, 2);
+            p += 2;
+            continue;
+        }
+        if (strncmp(p, "&=", 2) == 0) {
+            push_token(TK_ASSIGNAND, p, 0, 2);
+            p += 2;
+            continue;
+        }
 
         // One-letter tokens.
         switch (*p) {
@@ -310,7 +325,9 @@ void tokenize(char *p) {
         case '>':
         case '[':
         case ']':
+        case '^':
         case '{':
+        case '|':
         case '}':
             push_token(*p, p, 0, 1);
             ++p;
@@ -632,7 +649,7 @@ static Node *reassign_to_lhs(char operator, Node *lhs, Node *rhs) {
 }
 
 Node *assign(void) {
-    Node *lhs = equal();
+    Node *lhs = bitwise_or();
     if (consume('='))
         return new_node_binop('=', lhs, assign());
     if (consume(TK_ASSIGNPLUS))
@@ -643,6 +660,12 @@ Node *assign(void) {
         return reassign_to_lhs('*', lhs, assign());
     if (consume(TK_ASSIGNDIVIDE))
         return reassign_to_lhs('/', lhs, assign());
+    if (consume(TK_ASSIGNOR))
+        return reassign_to_lhs('|', lhs, assign());
+    if (consume(TK_ASSIGNXOR))
+        return reassign_to_lhs('^', lhs, assign());
+    if (consume(TK_ASSIGNAND))
+        return reassign_to_lhs('&', lhs, assign());
     return lhs;
 }
 
@@ -687,6 +710,27 @@ Node *iteration_for(void) {
     expect(')');
     node->iterbody = statement();
     return node;
+}
+
+Node *bitwise_or(void) {
+    Node *lhs = bitwise_xor();
+    if (consume('|'))
+        return new_node_binop('|', lhs, bitwise_or());
+    return lhs;
+}
+
+Node *bitwise_xor(void) {
+    Node *lhs = bitwise_and();
+    if (consume('^'))
+        return new_node_binop('^', lhs, bitwise_xor());
+    return lhs;
+}
+
+Node *bitwise_and(void) {
+    Node *lhs = equal();
+    if (consume('&'))
+        return new_node_binop('&', lhs, bitwise_and());
+    return lhs;
 }
 
 Node *equal(void) {

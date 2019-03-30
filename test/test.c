@@ -202,6 +202,14 @@ EXPECT(0) { char c0 = 1; char c1 = 2; return c0 > c1; }
 EXPECT(1) { int i = 256 + 1; char c = 2; return i > c; }
 EXPECT(1) { int i = 256 + 1; char *pc = &i; char c = 2; return *pc < c; }
 
+// Bitwise expressions.
+EXPECT(3) { return 0 | 3; }
+EXPECT(3) { return 1 | 3; }
+EXPECT(3) { return 0 ^ 3; }
+EXPECT(2) { return 1 ^ 3; }
+EXPECT(0) { return 0 & 3; }
+EXPECT(2) { return 2 & 3; }
+
 // Assignment expressions.
 EXPECT(5) { int x = -5; x = 5; return x; }
 EXPECT(0) { int x = -5; x += 5; return x; }
@@ -209,6 +217,12 @@ EXPECT(0) { int x = -5; return x += 5; }
 EXPECT(-10) { int x = -5; x -= 5; return x; }
 EXPECT(-25) { int x = -5; x *= 5; return x; }
 EXPECT(-1) { int x = -5; x /= 5; return x; }
+EXPECT(7) { int x = 5; x |= 7; return x; }
+EXPECT(7) { char x = 5; x |= 7; return x; }
+EXPECT(2) { int x = 5; x ^= 7; return x; }
+EXPECT(2) { char x = 5; x ^= 7; return x; }
+EXPECT(5) { int x = 5; x &= 7; return x; }
+EXPECT(5) { char x = 5; x &= 7; return x; }
 
 // Global variables.
 int gvar_i;

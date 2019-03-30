@@ -515,6 +515,15 @@ static void gen(const Node *node, const Map *idents) {
     pop("rax");
 
     switch (node->ty) {
+    case '|':
+        printf("  or rax, rdi\n");
+        break;
+    case '^':
+        printf("  xor rax, rdi\n");
+        break;
+    case '&':
+        printf("  and rax, rdi\n");
+        break;
     case '*':
         printf("  mul rdi\n");
         break;

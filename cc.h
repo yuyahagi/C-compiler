@@ -43,7 +43,10 @@ enum {
     TK_ASSIGNPLUS,  // "+=".
     TK_ASSIGNMINUS, // "-=".
     TK_ASSIGNMULT,  // "*=".
-    TK_ASSIGNDIVIDE,// '/='.
+    TK_ASSIGNDIVIDE,// "/=".
+    TK_ASSIGNOR,    // "|=".
+    TK_ASSIGNXOR,   // "^=".
+    TK_ASSIGNAND,   // "&=".
     TK_LESSEQUAL,   // "<=".
     TK_GREATEREQUAL,// ">=".
     TK_EQUAL,       // Equality operator "==".
@@ -217,6 +220,9 @@ Node *assign(void);
 Node *selection(void);
 Node *iteration_while(void);
 Node *iteration_for(void);
+Node *bitwise_or(void);
+Node *bitwise_xor(void);
+Node *bitwise_and(void);
 Node *equal(void);
 Node *relational(void);
 Node *add(void);
