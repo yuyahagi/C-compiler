@@ -39,17 +39,18 @@ EXPECT(0) { 42; return; }
 EXPECT(0) { return; 42; }
 EXPECT(1) { return 1; 2; }
 EXPECT(1) { return 1; return 2; }
+EXPECT(-3) { return -3; }
+EXPECT(3) { return +3; }
 EXPECT(21) { return 5+20-4; }
 EXPECT(21) {    return  5 +20 - 4  ;  }
 EXPECT(14) { return 2+3*4; }
 EXPECT(10) { return 2*3+4; }
 EXPECT(14) { return 5*4-3*2; }
 EXPECT(5) { return 60/12; }
+EXPECT(-1) { return -5/5; }
 EXPECT(5) { return 1+60/12-1; }
 EXPECT(20) { return (2+3)*4; }
 EXPECT(7) { 1; 2; return 3+4; }
-EXPECT(-3) { return -3; }
-EXPECT(3) { return +3; }
 EXPECT(3) { return -(-3); }
 EXPECT(3) { return +(+3); }
 EXPECT(3) { return -(+(-3)); }
@@ -59,6 +60,7 @@ EXPECT(3) { int a; a=1; return a+2; }
 EXPECT(3) { int a = -3; return -a; }
 EXPECT(3) { int x=1; x = x+2; return x; }
 EXPECT(3) { int x = 2; int y = x + 2; return y - 1; }
+EXPECT(-1) { int x = -5; return x / 5; }
 EXPECT(4) { int _long_variable_1_; _long_variable_1_ = 2; return _long_variable_1_ * 2; }
 EXPECT(5) { int foo; int bar; int baz; foo=1; bar=baz=foo+1; return foo+bar*baz; }
 EXPECT(1) { int foo; foo = 0; return (foo = foo + 3) == 3; }

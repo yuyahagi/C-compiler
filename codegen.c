@@ -519,8 +519,19 @@ static void gen(const Node *node, const Map *idents) {
         printf("  mul rdi\n");
         break;
     case '/':
-        printf("  xor rdx, rdx\n");
-        printf("  div rdi\n");
+        switch (get_typesize(node->type)) {
+        case 4:
+            printf("  cltd\n");
+            printf("  idiv edi\n");
+            break;
+        case 8:
+            printf("  cqto\n");
+            printf("  idiv rdi\n");
+            break;
+        default:
+            fprintf(stderr, "Division of a type with unsupported type size.\n");
+            exit(1);
+        }
         break;
     case '<':
         printf("  cmp eax, edi\n");
