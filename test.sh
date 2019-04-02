@@ -28,6 +28,7 @@ grep -o 'TESTCASE_[0-9].*()' test/tmp_test.c | awk '{print $1";"}' >> test/tmp_t
 echo 'printf("\n");' >> test/tmp_test.c
 echo '}' >> test/tmp_test.c
 ./cc "$(cat test/tmp_test.c)" > test/tmp_test.s
+rm -f tmp_test
 gcc -o tmp_test test/tmp_test.s tmp_funcs.o
 ./tmp_test
 

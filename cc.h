@@ -51,6 +51,8 @@ enum {
     TK_GREATEREQUAL,// ">=".
     TK_EQUAL,       // Equality operator "==".
     TK_NOTEQUAL,    // Nonequality operator "!=".
+    TK_LOGICALOR,   // "||".
+    TK_LOGICALAND,  // "&&".
     TK_INCREMENT,   // "++".
     TK_DECREMENT,   // "--".
     TK_IF,
@@ -93,6 +95,7 @@ enum {
     ND_GREATEREQUAL,
     ND_EQUAL,
     ND_NOTEQUAL,
+    ND_LOGICAL,     // Logical "or" or "and" pair (E1 || E2 or E1 && E2).
     ND_MEMBER,      // Struct member access.
     ND_IF,
     ND_WHILE,
@@ -155,6 +158,13 @@ typedef struct Node {
             struct Node *rhs;
         };
 
+        // Logical or and logical and.
+        struct {
+            int lop;
+            struct Node *llhs;
+            struct Node *lrhs;
+        };
+
         // Variable or variable declaration.
         struct {
             char *name;
@@ -200,6 +210,7 @@ extern Map *strings;
 Node *new_node(int ty);
 Node *new_node_uop(int ty, Node *operand);
 Node *new_node_binop(int ty, Node *lhs, Node *rhs);
+Node *new_node_logical(int lop, Node *llhs, Node *lrhs);
 Node *new_node_num(int val);
 Node *new_node_ident(const Token *tok, Type *type);
 Node *new_node_string(const Token *tok);
@@ -220,6 +231,8 @@ Node *assign(void);
 Node *selection(void);
 Node *iteration_while(void);
 Node *iteration_for(void);
+Node *logical_or(void);
+Node *logical_and(void);
 Node *bitwise_or(void);
 Node *bitwise_xor(void);
 Node *bitwise_and(void);

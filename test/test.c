@@ -202,6 +202,44 @@ EXPECT(0) { char c0 = 1; char c1 = 2; return c0 > c1; }
 EXPECT(1) { int i = 256 + 1; char c = 2; return i > c; }
 EXPECT(1) { int i = 256 + 1; char *pc = &i; char c = 2; return *pc < c; }
 
+// Logical expressions.
+EXPECT(0) { char x1 = 0; char x2 = 0; return x1 || x2; }
+EXPECT(1) { char x1 = 0; char x2 = 1; return x1 || x2; }
+EXPECT(1) { char x1 = 1; char x2 = 0; return x1 || x2; }
+EXPECT(1) { char x1 = 1; char x2 = 1; return x1 || x2; }
+EXPECT(0) { char x1 = 0; char x2 = 0; return x1 && x2; }
+EXPECT(0) { char x1 = 0; char x2 = 1; return x1 && x2; }
+EXPECT(0) { char x1 = 1; char x2 = 0; return x1 && x2; }
+EXPECT(1) { char x1 = 1; char x2 = 1; return x1 && x2; }
+EXPECT(1) {
+    char x1 = 0;
+    char x2 = 0;
+    int res = x1++ || x2++;
+    if (res == 0 && x1 == 1 && x2 == 1) return 1;
+    else return 0;
+}
+EXPECT(1) {
+    char x1 = 1;
+    char x2 = 0;
+    int res = x1++ || x2++;
+    if (res == 1 && x1 == 2 && x2 == 0) return 1;
+    else return 0;
+}
+EXPECT(1) {
+    char x1 = 0;
+    char x2 = 1;
+    int res = x1++ && x2++;
+    if (res == 0 && x1 == 1 && x2 == 1) return 1;
+    else return 0;
+}
+EXPECT(1) {
+    char x1 = 1;
+    char x2 = 1;
+    int res = x1++ && x2++;
+    if (res == 1 && x1 == 2 && x2 == 2) return 1;
+    else return 0;
+}
+
 // Bitwise expressions.
 EXPECT(3) { return 0 | 3; }
 EXPECT(3) { return 1 | 3; }
@@ -289,6 +327,8 @@ EXPECT(0) { char c = 0; if (c) return 1; else return 0; return 127; }
 EXPECT(0) { int x = 3; int y; if (x + 1 != 2 * 2) y = 1; else y = 0; if (y) return 1; else return 0; }
 EXPECT(1) { int x = 3; int y; if (x + 1 == 2 * 2) y = 1; else y = 0; if (y) return 1; else return 0; }
 EXPECT(2) { int x = 0; if (1) { x = 1; x = x * 2; } return x; }
+EXPECT(1) { int x = 0; if (x++ == 0) return x; else return -1; }
+EXPECT(1) { int x = 0; if (++x == 1) return x; else return -1; }
 int add_upto(int x) { if (x == 1) return x; else return x + add_upto(x-1); }
 EXPECT(15) { return add_upto(5); }
 EXPECT(2) {
@@ -408,5 +448,4 @@ EXPECT(0) {
 
     return 0;
 }
-
 

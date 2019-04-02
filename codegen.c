@@ -499,6 +499,44 @@ static void gen(const Node *node, const Map *idents) {
         gen_typed_mov_rax_to_ptr_rdi(node->lhs->type);
         return;
 
+    case ND_LOGICAL:
+    {
+        assert(node->lop == '|' || node->lop == '&');
+        int lbl_false = nlabel++;
+        int lbl_true = nlabel++;
+        int lbl_end = nlabel++;
+
+        if (node->lop == '|') {
+            gen(node->llhs, idents);
+            printf("  cmp rax, 0\n");
+            printf("  jne .L%d\n", lbl_true);
+            gen(node->lrhs, idents);
+            printf("  cmp rax, 0\n");
+            printf("  jne .L%d\n", lbl_true);
+            printf(".L%d:\n", lbl_false);
+            printf("  xor rax, rax\n");
+            printf("  jmp .L%d\n", lbl_end);
+            printf(".L%d:\n", lbl_true);
+            printf("  mov rax, 1\n");
+            printf(".L%d:\n", lbl_end);
+            return;
+        } else {
+            gen(node->llhs, idents);
+            printf("  cmp rax, 0\n");
+            printf("  je .L%d\n", lbl_false);
+            gen(node->lrhs, idents);
+            printf("  cmp rax, 0\n");
+            printf("  je .L%d\n", lbl_false);
+            printf(".L%d:\n", lbl_true);
+            printf("  mov rax, 1\n");
+            printf("  jmp .L%d\n", lbl_end);
+            printf(".L%d:\n", lbl_false);
+            printf("  xor rax, rax\n");
+            printf(".L%d:\n", lbl_end);
+            return;
+        }
+    }
+
     case '+':
     case '-':   // Fall through.
         gen_add(node->ty, node->lhs, node->rhs, idents);

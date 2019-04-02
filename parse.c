@@ -71,6 +71,19 @@ Node *new_node_binop(int ty, Node *lhs, Node *rhs) {
     return node;
 }
 
+Node *new_node_logical(int lop, Node *llhs, Node *lrhs) {
+    Node *node = calloc(1, sizeof(Node));
+    node->ty = ND_LOGICAL;
+    node->lop = lop;
+    node->llhs = llhs;
+    node->lrhs = lrhs;
+    // Set int type.
+    Type *ty_int = calloc(1, sizeof(Type));
+    ty_int->ty = INT;
+    node->type = ty_int;
+    return node;
+}
+
 Node *new_node_num(int val) {
     Node *node = calloc(1, sizeof(Node));
     node->ty = ND_NUM;
@@ -237,6 +250,18 @@ void tokenize(char *p) {
             continue;
         }
 
+        // Logical or ("||") and and ("&&").
+        if (strncmp(p, "||", 2) == 0) {
+            push_token(TK_LOGICALOR, p, 0, 2);
+            p += 2;
+            continue;
+        }
+        if (strncmp(p, "&&", 2) == 0) {
+            push_token(TK_LOGICALAND, p, 0, 2);
+            p += 2;
+            continue;
+        }
+
         // Equality and nonequality operators.
         if (strncmp(p, "==", 2) == 0) {
             push_token(TK_EQUAL, p, 0, 2);
@@ -387,11 +412,21 @@ static void error(const char *msg, size_t i) {
 // init_declarator: declarator | declarator "=" assign
 // declarator: ident | declarator "[" num "]"
 // statement: assign ";" | selection | iteration | "return" ";" | "return" assign ";"
-// assign: equal assign'
-// assign': '' | "=" assign'
+// assign: logical_or assign'
+// assign': '' | "=" assign
 // selection: "if" "(" assign ")" statement | "if" "(" assign ")" statement "else" statement
 // iteration: "while" "(" assign ")" statement
 // iteration: "for" "(" assign ";" assign ";" assign ")" statement
+// logical_or: logical_and logical_or'
+// logical_or': '' | "||" logical_or
+// logical_and: bitwise_or logical_and'
+// logical_and': '' | "&&" logical_and
+// bitwise_or: bitwise_xor bitwise_or'
+// bitwise_or': '' | "|" bitwise_or
+// bitwise_xor: bitwise_and bitwise_xor'
+// bitwise_xor': '' | "^" bitwise_xor
+// bitwise_and: equal bitwise_and'
+// bitwise_and': '' | "&" bitwise_and
 // equal: relational equal'
 // equal': '' | "==" equal | "!=" equal
 // relational: add relational'
@@ -649,7 +684,7 @@ static Node *reassign_to_lhs(char operator, Node *lhs, Node *rhs) {
 }
 
 Node *assign(void) {
-    Node *lhs = bitwise_or();
+    Node *lhs = logical_or();
     if (consume('='))
         return new_node_binop('=', lhs, assign());
     if (consume(TK_ASSIGNPLUS))
@@ -710,6 +745,24 @@ Node *iteration_for(void) {
     expect(')');
     node->iterbody = statement();
     return node;
+}
+
+Node *logical_or(void) {
+    Node *lhs = logical_and();
+    if (consume(TK_LOGICALOR)) {
+        Node *node = new_node_logical('|', lhs, logical_or());
+        return node;
+    }
+    return lhs;
+}
+
+Node *logical_and(void) {
+    Node *lhs = bitwise_or();
+    if (consume(TK_LOGICALAND)) {
+        Node *node = new_node_logical('&', lhs, logical_and());
+        return node;
+    }
+    return lhs;
 }
 
 Node *bitwise_or(void) {
