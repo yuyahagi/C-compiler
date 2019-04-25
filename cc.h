@@ -39,6 +39,7 @@ enum {
     TK_TYPE_CHAR,   // Type specifier
     TK_TYPE_INT,
     TK_STRUCT,
+    TK_SIZEOF,      // "sizeof" operator.
     TK_IDENT,       // Represents an identifier.
     TK_ASSIGNPLUS,  // "+=".
     TK_ASSIGNMINUS, // "-=".

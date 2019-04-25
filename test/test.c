@@ -449,3 +449,9 @@ EXPECT(0) {
     return 0;
 }
 
+// Type size.
+EXPECT(1) { return sizeof(char); }
+EXPECT(4) { return sizeof(int); }
+EXPECT(8) { return sizeof(struct {int x0; char x1;}); }
+EXPECT(16) { return sizeof(struct {int x0; char x1; int x2;}); }
+

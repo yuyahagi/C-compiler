@@ -226,6 +226,10 @@ void tokenize(char *p) {
                 push_token(TK_STRUCT, p0, 0, len);
                 continue;
             }
+            if (strncmp(p0, "sizeof", max(len, 6)) == 0) {
+                push_token(TK_SIZEOF, p0, p, len);
+                continue;
+            }
             if (strncmp(p0, "return", max(len, 6)) == 0) {
                 push_token(TK_RETURN, p0, 0, len);
                 continue;
@@ -469,6 +473,11 @@ static Type *decl_specifier() {
     }
     type->ptr_of = NULL;
     return type;
+}
+
+static Type *type_name() {
+    // TODO: Type names are different from declaration specifiers.
+    return decl_specifier();
 }
 
 void program(void) {
@@ -861,6 +870,14 @@ Node *unary(void) {
         ++pos;
         Node *operand = unary();
         return new_node_uop(tok->ty, operand);
+    }
+    case TK_SIZEOF:
+    {
+        ++pos;
+        expect('(');
+        size_t type_size = get_typesize(type_name());
+        expect(')');
+        return new_node_num((int)type_size);
     }
     default:
         return postfix();
