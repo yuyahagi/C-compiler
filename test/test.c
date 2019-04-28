@@ -142,6 +142,17 @@ EXPECT(6) { char x = 5; ++x; return x; }
 EXPECT(0) { char x = 255; char y; y = ++x; return y; }
 EXPECT(4) { char x = 5; --x; return x; }
 EXPECT(255) { char x; x = 0; char y; y = --x; return y; }
+
+EXPECT(3) { short x0; short x1; x0 = -5; x1 = x0+8; return x1; }
+EXPECT(3) { short x0 = -5; short x1 = x0+8; return x1; }
+EXPECT(3) { short x; short *p; p = &x; x = 3; return *p; }
+EXPECT(65535) { short x = 0; x = x - 1; return x; }
+EXPECT(0) { short x = 65535; x = x + 1; return x; }
+EXPECT(6) { short x = 5; ++x; return x; }
+EXPECT(0) { short x = 65535; short y; y = ++x; return y; }
+EXPECT(4) { short x = 5; --x; return x; }
+EXPECT(65535) { short x; x = 0; short y; y = --x; return y; }
+
 EXPECT(0) {
     char arc[4];
     arc[3] = 4; arc[2] = 3; arc[1] = 2; arc[0] = 1;
@@ -173,6 +184,38 @@ EXPECT(12) {
     char **pp = &p;
     ++pp;
     return (*pp)[2];
+}
+
+EXPECT(0) {
+    short ars[2];
+    ars[1] = 2; ars[0] = 1;
+    int *pi = ars;
+    return *pi - (2*65536 + 1);
+}
+EXPECT(2) {
+    int i;
+    i = 2*256*256 + 1;
+    short *p = &i;
+    return *(1 + p);
+}
+EXPECT(3*256) {
+    int i = 0;
+    char *p = &i;
+    short *q = p + 1;
+    *(two() + p - 1) = 3;
+    return i;
+}
+EXPECT(24*256 + 12) {
+    int i[3];
+    i[0] = 8*256*256*256 + 4*256*256 + 2*256 + 1;
+    i[1] = 0;
+    i[2] = 3 * i[0];
+    short *p[2];
+    p[0] = &i;
+    p[1] = &i[2];
+    short **pp = &p;
+    ++pp;
+    return (*pp)[1];
 }
 
 // Relations

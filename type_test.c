@@ -39,18 +39,24 @@ static void expect_type(int line, const Type *expected, const Type *actual) {
 
 static void type_is_basic_type_test() {
     Type ty_char = (Type) { .ty = CHAR, .ptr_of = NULL, .array_len = 0 };
+    Type ty_short = (Type) { .ty = SHORT, .ptr_of = NULL, .array_len = 0 };
     Type ty_int = (Type) { .ty = INT, .ptr_of = NULL, .array_len = 0 };
     Type ty_pchar = (Type) { .ty = PTR, .ptr_of = &ty_char, .array_len = 0 };
+    Type ty_pshort = (Type) { .ty = PTR, .ptr_of = &ty_short, .array_len = 0 };
     Type ty_pint = (Type) { .ty = PTR, .ptr_of = &ty_int, .array_len = 0 };
     Type ty_archar = (Type) { .ty = ARRAY, .ptr_of = &ty_char, .array_len = 3 };
+    Type ty_arshort = (Type) { .ty = ARRAY, .ptr_of = &ty_short, .array_len = 3 };
     Type ty_arint = (Type) { .ty = ARRAY, .ptr_of = &ty_int, .array_len = 3 };
     Type ty_struct = (Type) { .ty = STRUCT };
 
     expect(__LINE__, 1, is_basic_type(&ty_char));
+    expect(__LINE__, 1, is_basic_type(&ty_short));
     expect(__LINE__, 1, is_basic_type(&ty_int));
     expect(__LINE__, 0, is_basic_type(&ty_pchar));
+    expect(__LINE__, 0, is_basic_type(&ty_pshort));
     expect(__LINE__, 0, is_basic_type(&ty_pint));
     expect(__LINE__, 0, is_basic_type(&ty_archar));
+    expect(__LINE__, 0, is_basic_type(&ty_arshort));
     expect(__LINE__, 0, is_basic_type(&ty_arint));
     expect(__LINE__, 0, is_basic_type(&ty_struct));
 
@@ -62,12 +68,18 @@ static void type_getsize_test() {
     Type ty_char = (Type) { .ty = CHAR, .ptr_of = NULL, .array_len = 0 };
     expect(__LINE__, 1, get_typesize(&ty_char));
 
+    Type ty_short = (Type) { .ty = SHORT, .ptr_of = NULL, .array_len = 0 };
+    expect(__LINE__, 2, get_typesize(&ty_short));
+
     Type ty_int = (Type) { .ty = INT, .ptr_of = NULL, .array_len = 0 };
     expect(__LINE__, 4, get_typesize(&ty_int));
 
     // Pointer to basic types.
     Type ty_pchar = (Type) { .ty = PTR, .ptr_of = &ty_char, .array_len = 0 };
     expect(__LINE__, 8, get_typesize(&ty_pchar));
+
+    Type ty_pshort = (Type) { .ty = PTR, .ptr_of = &ty_short, .array_len = 0 };
+    expect(__LINE__, 8, get_typesize(&ty_pshort));
 
     Type ty_pint = (Type) { .ty = PTR, .ptr_of = &ty_int, .array_len = 0 };
     expect(__LINE__, 8, get_typesize(&ty_pint));
@@ -76,12 +88,18 @@ static void type_getsize_test() {
     Type ty_ppchar = (Type) { .ty = PTR, .ptr_of = &ty_pchar, .array_len = 0 };
     expect(__LINE__, 8, get_typesize(&ty_ppchar));
 
+    Type ty_ppshort = (Type) { .ty = PTR, .ptr_of = &ty_pshort, .array_len = 0 };
+    expect(__LINE__, 8, get_typesize(&ty_ppshort));
+
     Type ty_ppint = (Type) { .ty = PTR, .ptr_of = &ty_pint, .array_len = 0 };
     expect(__LINE__, 8, get_typesize(&ty_ppint));
 
     // Array of basic types.
     Type ty_archar = (Type) { .ty = ARRAY, .ptr_of = &ty_char, .array_len = 3 };
     expect(__LINE__, 3, get_typesize(&ty_archar));
+
+    Type ty_arshort = (Type) { .ty = ARRAY, .ptr_of = &ty_short, .array_len = 3 };
+    expect(__LINE__, 6, get_typesize(&ty_arshort));
 
     Type ty_arint = (Type) { .ty = ARRAY, .ptr_of = &ty_int, .array_len = 3 };
     expect(__LINE__, 12, get_typesize(&ty_arint));

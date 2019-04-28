@@ -19,6 +19,8 @@ size_t get_typesize(const Type *type) {
     switch (type->ty) {
     case CHAR:
         return 1;
+    case SHORT:
+        return 2;
     case INT:
         return 4;
     case PTR:
@@ -50,7 +52,7 @@ size_t get_typesize(const Type *type) {
 }
 
 bool is_basic_type(const Type *type) {
-    return type->ty == CHAR || type->ty == INT;
+    return type->ty == CHAR || type->ty == SHORT || type->ty == INT;
 }
 
 Type *deduce_type(int operator, Node *lhs, Node *rhs) {

@@ -214,12 +214,16 @@ void tokenize(char *p) {
             while (isalpha(*p) || isdigit(*p) || *p == '_');
 
             int len = p - p0;
-            if (strncmp(p0, "int", max(len, 3)) == 0) {
-                push_token(TK_TYPE_INT, p0, 0, len);
-                continue;
-            }
             if (strncmp(p0, "char", max(len, 4)) == 0) {
                 push_token(TK_TYPE_CHAR, p0, 0, len);
+                continue;
+            }
+            if (strncmp(p0, "short", max(len, 5)) == 0) {
+                push_token(TK_TYPE_SHORT, p0, 0, len);
+                continue;
+            }
+            if (strncmp(p0, "int", max(len, 3)) == 0) {
+                push_token(TK_TYPE_INT, p0, 0, len);
                 continue;
             }
             if (strncmp(p0, "struct", max(len, 6)) == 0) {
@@ -444,19 +448,23 @@ static void error(const char *msg, size_t i) {
 
 static Type *decl_specifier() {
     Token *tok = get_token(pos++);
-    if (tok->ty != TK_TYPE_INT
-            && tok->ty != TK_TYPE_CHAR
+    if (tok->ty != TK_TYPE_CHAR
+            && tok->ty != TK_TYPE_SHORT
+            && tok->ty != TK_TYPE_INT
             && tok->ty != TK_STRUCT) {
         fprintf(stderr, "A type specifier of int, char, or struct was expected but got token %d.\n", tok->ty);
         exit(1);
     }
     Type *type = calloc(1, sizeof(Type));
     switch (tok->ty) {
-    case TK_TYPE_INT:
-        type->ty = INT;
-        break;
     case TK_TYPE_CHAR:
         type->ty = CHAR;
+        break;
+    case TK_TYPE_SHORT:
+        type->ty = SHORT;
+        break;
+    case TK_TYPE_INT:
+        type->ty = INT;
         break;
     case TK_STRUCT:
     {
@@ -623,8 +631,9 @@ Node *compound(void) {
     Token *tok = get_token(pos);
     while (tok->ty != TK_EOF && tok->ty != '}') {
         Node *decl_or_stmt = NULL;
-        if (tok->ty == TK_TYPE_INT
-                || tok->ty == TK_TYPE_CHAR
+        if (tok->ty == TK_TYPE_CHAR
+                || tok->ty == TK_TYPE_SHORT
+                || tok->ty == TK_TYPE_INT
                 || tok->ty == TK_STRUCT)
             decl_or_stmt = declaration(localvars);
         else

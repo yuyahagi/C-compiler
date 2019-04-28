@@ -35,6 +35,7 @@ static int decls_to_offsets(const Vector *code, Map *idents, int starting_offset
 
         switch (node->type->ty) {
         case CHAR:
+        case SHORT:
         case INT:
         case PTR:
             put_ident(idents, node->name, node->type, offset);
@@ -118,6 +119,9 @@ static void gen_typed_rax_dereference(const Type *type) {
     case 1:
         printf("  movzx eax, byte ptr [rax]\n");
         return;
+    case 2:
+        printf("  movzx eax, word ptr [rax]\n");
+        return;
     case 4:
         printf("  mov eax, dword ptr [rax]\n");
         return;
@@ -136,6 +140,9 @@ static void gen_typed_mov_rax_to_ptr_rdi(const Type *type) {
     case 1:
         printf("  mov byte ptr [rdi], al\n");
         return;
+    case 2:
+        printf("  mov word ptr [rdi], ax\n");
+        return;
     case 4:
         printf("  mov dword ptr [rdi], eax\n");
         return;
@@ -153,6 +160,9 @@ static void gen_typed_cmp_rax_to_0(const Type *type) {
     switch (siz) {
     case 1:
         printf("  cmp al, 0\n");
+        return;
+    case 2:
+        printf("  cmp ax, 0\n");
         return;
     case 4:
         printf("  cmp eax, 0\n");

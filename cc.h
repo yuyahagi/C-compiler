@@ -37,6 +37,7 @@ enum {
     TK_NUM = 256,   // Represents a number.
     TK_STRING_LITERAL,
     TK_TYPE_CHAR,   // Type specifier
+    TK_TYPE_SHORT,
     TK_TYPE_INT,
     TK_STRUCT,
     TK_SIZEOF,      // "sizeof" operator.
@@ -113,7 +114,7 @@ struct Node;
 // Types.
 // =============================================================================
 typedef struct Type {
-    enum { CHAR, INT, PTR, ARRAY, STRUCT } ty;
+    enum { CHAR, SHORT, INT, PTR, ARRAY, STRUCT } ty;
     struct Type *ptr_of;
     size_t array_len;
     Map *member_types;
